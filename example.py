@@ -16,18 +16,17 @@ from parse_docs import parse_documents    # Nuevo método con LlamaParse
 from create_vectors.create_vector_milvus import create_vectors
 from model_ai import connect_ollama
 from create_index.create_index_llamaindex import create_index_llamaindex
+from src.config import CHUNKING_CONFIG, OLLAMA_CONFIG, PATH_CONFIG
 
 
 def main():
     conn = connect_milvus()
     collection_name = create_schema_comercial()
     embedding_model = choice_embedding()
-    print("Modelo de embedding seleccionado:", embedding_model)
-    
-    # Usar LlamaParse para procesar documentos si hay API key configurada
+    print("Modelo de embedding seleccionado:", embedding_model)    
     try:
         documents = parse_documents(
-            directory_path="pdfs",
+            directory_path=PATH_CONFIG["pdf_directory"],
             api_key=os.environ.get("LLAMA_CLOUD_API_KEY") or os.environ.get("LLAMA_API_KEY")
         )
         print("Documentos procesados con LlamaParse:", len(documents))
@@ -40,7 +39,14 @@ def main():
     vector_store = create_vectors(collection_name, embedding_model)
     print("Vectores creados:", vector_store)
     llm = connect_ollama()
-    index = create_index_llamaindex(documents, vector_store, embedding_model)
+    
+    # Crear índice usando configuración centralizada de chunking
+    index = create_index_llamaindex(
+        documents=documents, 
+        vector_store=vector_store, 
+        embed_model=embedding_model,
+        **CHUNKING_CONFIG  # Usamos los parámetros desde la configuración centralizada
+    )
     print("Índice creado:", index)
     query = "segun el documento de cobranza dime como se hace la cobranza"
 
