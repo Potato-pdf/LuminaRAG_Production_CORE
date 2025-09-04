@@ -1,11 +1,12 @@
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 import numpy as np
 from typing import List
+from src.config import EMBEDDING_CONFIG
 
 class PooledHuggingFaceEmbedding:
     def __init__(self, model_name: str):
         self.base_model = HuggingFaceEmbedding(model_name=model_name)
-        self.embed_dim = 768
+        self.embed_dim = EMBEDDING_CONFIG["embedding_dim"]
     
     def get_text_embedding(self, text: str) -> List[float]:
         token_embeddings = self.base_model._get_raw_embedding(text)
