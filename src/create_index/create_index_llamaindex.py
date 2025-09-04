@@ -30,7 +30,7 @@ def create_index_llamaindex(
         nodes,
         vector_store=vector_store,
         embed_model=embed_model,
-        show_progress=True  # Mostrar progreso durante la indexación
+        show_progress=True  
     )
     
     return index
