@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 from pathlib import Path
-from llama_index.readers.llama_parse import LlamaParseReader
+from llama_index.readers.llama_parse import LlamaParse
 from llama_index.core import Document
 
 def parse_documents(directory_path: str = "pdfs", api_key: Optional[str] = None) -> List[Document]:
@@ -17,16 +17,16 @@ def parse_documents(directory_path: str = "pdfs", api_key: Optional[str] = None)
         List[Document]: Lista de documentos de LlamaIndex con el contenido estructurado.
     """
     # Utilizar la API key proporcionada o intentar obtenerla del entorno
-    api_key = api_key or os.environ.get("LLAMA_CLOUD_API_KEY")
+    api_key = api_key or os.environ.get("LLAMA_CLOUD_API_KEY") or os.environ.get("LLAMA_API_KEY")
     
     if not api_key:
         raise ValueError(
             "Se requiere API key para LlamaParse. Configúrala como variable de entorno "
-            "LLAMA_CLOUD_API_KEY o pásala como parámetro."
+            "LLAMA_CLOUD_API_KEY o LLAMA_API_KEY, o pásala como parámetro."
         )
     
     # Inicializar el reader de LlamaParse
-    reader = LlamaParseReader(
+    reader = LlamaParse(
         api_key=api_key,
         result_type="markdown",  # También puedes usar "text" o "all"
         language="es",           # Español para mejor procesamiento de documentos en español
