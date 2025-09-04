@@ -30,8 +30,7 @@ def parse_documents(directory_path: str = "pdfs", api_key: Optional[str] = None)
         api_key=api_key,
         result_type="markdown",  # También puedes usar "text" o "all"
         language="es",           # Español para mejor procesamiento de documentos en español
-        verbose=True,            # Muestra información sobre el proceso
-        include_metadata=True    # Incluye metadatos como información de tablas/imágenes
+        verbose=True             # Muestra información sobre el proceso
     )
     
     # Obtener rutas a todos los PDFs en el directorio
@@ -44,9 +43,15 @@ def parse_documents(directory_path: str = "pdfs", api_key: Optional[str] = None)
     
     print(f"Procesando {len(pdf_files)} archivos PDF con LlamaParse...")
     
-    # Convertir los PDFs a documentos de LlamaIndex con contenido estructurado
-    documents = reader.load_data(sources=[str(pdf) for pdf in pdf_files])
+    # Procesar los PDFs uno por uno y acumular los documentos resultantes
+    all_documents = []
+    for pdf_file in pdf_files:
+        # Usar parse() para un solo archivo
+        result = reader.parse(file_path=str(pdf_file))
+        # Convertir el resultado a documentos
+        documents = result.get_markdown_documents()
+        all_documents.extend(documents)
     
-    print(f"Procesamiento completo. Se generaron {len(documents)} documentos.")
+    print(f"Procesamiento completo. Se generaron {len(all_documents)} documentos.")
     
-    return documents
+    return all_documents

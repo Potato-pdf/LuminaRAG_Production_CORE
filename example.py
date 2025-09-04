@@ -28,7 +28,7 @@ def main():
     try:
         documents = parse_documents(
             directory_path="pdfs",
-            api_key=os.environ.get("LLAMA_CLOUD_API_KEY")
+            api_key=os.environ.get("LLAMA_CLOUD_API_KEY") or os.environ.get("LLAMA_API_KEY")
         )
         print("Documentos procesados con LlamaParse:", len(documents))
     except Exception as e:
