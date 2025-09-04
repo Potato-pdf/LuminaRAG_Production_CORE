@@ -21,7 +21,7 @@ from src.parse_docs import parse_documents
 def main():
     """Prueba el procesamiento de documentos con LlamaParse"""
     
-    api_key = os.environ.get("LLAMA_CLOUD_API_KEY") or os.environ.get("LLAMA_API_KEY")
+    api_key = os.environ.get("LLAMA_CLOUD_API_KEY")
     if not api_key:
         print("ERROR: No se encontró API key en el archivo .env")
         print("Por favor, configura LLAMA_CLOUD_API_KEY o LLAMA_API_KEY con tu API key de LlamaParse")
