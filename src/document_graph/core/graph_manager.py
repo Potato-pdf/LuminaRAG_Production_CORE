@@ -14,7 +14,8 @@ class GraphManager:#Gestor del grafo, maneja operaciones basicas
     def chunk_count(self) -> int:
         return self._chunk_count
     
-    def add_chunk(self, chunk_id: str, content: str, metadata: Dict = None) -> None:#|Agrega un chunk al grafo
+    def add_chunk(self, chunk_id: str, content: str, metadata: Dict = None) -> None:
+        #| Agrega un chunk al grafo con su contenido y metadatos
         if metadata is None:
             metadata = {}
         if self.chunk_exists(chunk_id):
@@ -25,24 +26,28 @@ class GraphManager:#Gestor del grafo, maneja operaciones basicas
             metadata=metadata
         )
         self._chunk_count += 1
-        print(f"➕ Chunk agregado: {chunk_id} (Total: {self._chunk_count})")
-    def connect_chunks(self, chunk1_id: str, chunk2_id: str, weight: float = 1.0) -> bool:#|Conecta dos chunks en el grafo
+        #| Chunk agregado exitosamente - Total: {self._chunk_count}
+        
+    def connect_chunks(self, chunk1_id: str, chunk2_id: str, weight: float = 1.0) -> bool:
+        #| Conecta dos chunks en el grafo con peso especificado
         if not self.chunk_exists(chunk1_id):
-            print(f"❌ Error: chunk {chunk1_id} no existe")
+            #| Error: chunk {chunk1_id} no existe
             return False
             
         if not self.chunk_exists(chunk2_id):
-            print(f"❌ Error: chunk {chunk2_id} no existe")
+            #| Error: chunk {chunk2_id} no existe
             return False
             
         self._graph.add_edge(chunk1_id, chunk2_id, weight=weight)
+        #| Chunks conectados: {chunk1_id} → {chunk2_id} (peso: {weight})
         return True
 
-    def get_chunk_content(self, chunk_id: str) -> Optional[str]:#|Obtiene el contenido de un chunk
+    def get_chunk_content(self, chunk_id: str) -> Optional[str]:
+        #| Obtiene el contenido de un chunk específico
         if self.chunk_exists(chunk_id):
             return self._graph.nodes[chunk_id]['content']
         else:
-            print(f"❌ Chunk {chunk_id} no encontrado")
+            #| Chunk {chunk_id} no encontrado
             return None
     
     def get_chunk_metadata(self, chunk_id: str) -> Optional[Dict]:#|Obtiene los metadatos de un chunk

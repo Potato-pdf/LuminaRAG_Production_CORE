@@ -15,20 +15,19 @@ class GraphAnalyzer:
         except nx.NodeNotFound:
             return None
     
-    def get_most_important_chunks(self, top_k: int = 5) -> List[Tuple[str, float]]:#obtiene los chunks mas importantes usando PageRank
+    def get_most_important_chunks(self, top_k: int = 5) -> List[Tuple[str, float]]:
+        #| Obtiene los chunks mas importantes usando PageRank
         if self._graph.number_of_nodes() == 0:
             return []
         pagerank_scores = nx.pagerank(self._graph)
         sorted_chunks = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
         top_chunks = sorted_chunks[:top_k]
         
-        print(f"⭐ Top {top_k} chunks más importantes:")
-        for chunk_id, score in top_chunks:
-            print(f"   {chunk_id}: {score:.4f}")
+        #| Top {top_k} chunks más importantes calculados
         return top_chunks
     
     def get_chunk_neighbors(self, chunk_id: str, radius: int = 1) -> List[str]:
-    
+        #| Obtiene vecinos de un chunk dentro del radio especificado
         if chunk_id not in self._graph:
             return []
             
@@ -37,7 +36,7 @@ class GraphAnalyzer:
         # Remover el chunk central
         if chunk_id in neighbors:
             neighbors.remove(chunk_id)
-        print(f"👥 Vecinos de {chunk_id} (radio {radius}): {neighbors}")
+        #| Vecinos de {chunk_id} calculados (radio {radius})
         return neighbors
     
     def get_stats(self) -> Dict:#Obtiene estadisticas del grafo
@@ -61,13 +60,14 @@ class GraphAnalyzer:
         return stats
     
     def _print_stats(self, stats: Dict) -> None:
-        print("📈 Estadísticas del grafo:")
-        print(f"   📄 Total chunks: {stats['total_chunks']}")
-        print(f"   🔗 Total conexiones: {stats['total_connections']}")
-        print(f"   📚 Documentos: {stats['documents_count']}")
-        print(f"   🌐 Densidad: {stats['density']:.3f}")
-        print(f"   🔄 Fuertemente conectado: {stats['is_connected']}")
-        print(f"   📊 Grado promedio: {stats['average_degree']:.3f}")
+        #| Estadísticas del grafo:
+        #| Total chunks: {stats['total_chunks']}
+        #| Total conexiones: {stats['total_connections']}
+        #| Documentos: {stats['documents_count']}
+        #| Densidad: {stats['density']:.3f}
+        #| Fuertemente conectado: {stats['is_connected']}
+        #| Grado promedio: {stats['average_degree']:.3f}
+        pass
 
     def analyze_connectivity(self, chunk_id: str) -> Dict:#Analiza la conectividad de un chunk especifico
         if chunk_id not in self._graph:

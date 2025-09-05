@@ -8,11 +8,12 @@ class GraphBuilder:
         self._manager = graph_manager
     
     def build_from_chunks(self, documents_chunks: List[Dict]) -> None:
+        #| Construye el grafo a partir de una lista de chunks de documentos
         self._add_chunks_to_graph(documents_chunks)
         
         self._create_document_connections(documents_chunks)
         
-        print("✅ Construcción del grafo completada")
+        #| Construcción del grafo completada exitosamente
     
     def _add_chunks_to_graph(self, documents_chunks: List[Dict]) -> None:
         for chunk_data in documents_chunks:
