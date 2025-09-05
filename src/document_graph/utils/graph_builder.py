@@ -30,16 +30,24 @@ class GraphBuilder:
             self._create_sequential_connections(chunk_ids)
     
     def _validate_chunk_data(self, chunk_data: Dict) -> None:
-        required_fields = ['id', 'content']
-        for field in required_fields:
-            if field not in chunk_data:
-                raise ValueError(f"Chunk data debe contener el campo '{field}': {chunk_data}")
+        # Aceptar tanto 'id' como 'chunk_id' para flexibilidad
+        if 'id' not in chunk_data and 'chunk_id' not in chunk_data:
+            raise ValueError(f"Chunk data debe contener 'id' o 'chunk_id': {chunk_data}")
         
-        if not chunk_data['id'].strip():
+        if 'content' not in chunk_data:
+            raise ValueError(f"Chunk data debe contener 'content': {chunk_data}")
+        
+        # Normalizar el ID
+        chunk_id = chunk_data.get('id') or chunk_data.get('chunk_id')
+        if not chunk_id or not chunk_id.strip():
             raise ValueError("El ID del chunk no puede estar vacío")
         
         if not chunk_data['content'].strip():
             raise ValueError("El contenido del chunk no puede estar vacío")
+        
+        # Asegurar que siempre tengamos 'id' para el resto del código
+        if 'id' not in chunk_data:
+            chunk_data['id'] = chunk_data['chunk_id']
     
     def _group_chunks_by_document(self, documents_chunks: List[Dict]) -> Dict[str, List[str]]:
         docs_chunks = {}
