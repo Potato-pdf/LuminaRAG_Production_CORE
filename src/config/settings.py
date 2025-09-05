@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Configuración de chunking
 CHUNKING_CONFIG = {
@@ -37,4 +41,5 @@ OLLAMA_CONFIG = {
 # Configuración de rutas
 PATH_CONFIG = {
     "pdf_directory": os.getenv("PDF_DIRECTORY"),
+    "doc_directory": os.getenv("PDF_DIRECTORY"),  # Centralizado en pdfs
 }
