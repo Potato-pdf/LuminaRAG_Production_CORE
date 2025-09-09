@@ -10,3 +10,7 @@ services:
     environment:
       - PYTHONPATH=./src
     command: python3 example.py
+networks:
+  app_name:
+    name: ${NETWORK_NAME}
+    external: true
