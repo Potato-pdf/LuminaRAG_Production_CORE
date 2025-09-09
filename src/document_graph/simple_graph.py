@@ -1,4 +1,5 @@
 from typing import List, Dict, Optional, Tuple
+import networkx as nx
 from .core.graph_manager import GraphManager
 from .core.graph_analyzer import GraphAnalyzer  
 
@@ -30,9 +31,20 @@ class SimpleDocumentGraph:
         """Obtener contenido de un chunk"""
         return self._manager.get_chunk_content(chunk_id)
     
-    def get_connected_chunks(self, chunk_id: str) -> List[str]:
-        """Obtener chunks conectados directamente"""
-        return self._manager.get_connected_chunks(chunk_id)
+    def get_connected_chunks(self, chunk_id: str, max_connections: int = 5) -> List[Tuple[str, float]]:
+        """Obtener chunks conectados directamente con sus pesos"""
+        if not self.chunk_exists(chunk_id):
+            return []
+        
+        connected = []
+        for neighbor in self._manager.graph.neighbors(chunk_id):
+            # Obtener peso de la conexión
+            weight = self._manager.graph[chunk_id][neighbor].get('weight', 1.0)
+            connected.append((neighbor, weight))
+        
+        # Ordenar por peso y limitar
+        connected.sort(key=lambda x: x[1], reverse=True)
+        return connected[:max_connections]
     
     def get_most_important_chunks(self, top_k: int = 5) -> List[Tuple[str, float]]:
         """Obtener chunks más importantes usando PageRank - ESENCIAL para RAG"""
@@ -41,6 +53,22 @@ class SimpleDocumentGraph:
     def get_chunk_neighbors(self, chunk_id: str, radius: int = 1) -> List[str]:
         """Obtener vecinos de un chunk - ESENCIAL para contexto"""
         return self._get_analyzer().get_chunk_neighbors(chunk_id, radius)
+    
+    def get_chunk_importance(self, chunk_id: str) -> Optional[float]:
+        """Obtener importancia PageRank de un chunk específico"""
+        if not self.chunk_exists(chunk_id):
+            return None
+        
+        # Calcular PageRank para todo el grafo
+        import networkx as nx
+        if self._manager.chunk_count == 0:
+            return 0.0
+        
+        try:
+            pagerank_scores = nx.pagerank(self._manager.graph)
+            return pagerank_scores.get(chunk_id, 0.0)
+        except:
+            return 0.0
     
     # ========================================================================
     # UTILIDADES BÁSICAS
@@ -59,6 +87,14 @@ class SimpleDocumentGraph:
         """Limpiar el grafo completamente"""
         self._manager.clear()
         self._invalidate_analyzer()
+    
+    def get_stats(self) -> Dict:
+        """Obtener estadísticas del grafo"""
+        return {
+            'nodes': self._manager.chunk_count,
+            'edges': self._manager.graph.number_of_edges(),
+            'connected_components': len(list(nx.weakly_connected_components(self._manager.graph))) if self._manager.chunk_count > 0 else 0
+        }
     
     # ========================================================================
     # MÉTODOS INTERNOS
