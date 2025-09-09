@@ -8,7 +8,8 @@ from .settings import (
     EMBEDDING_CONFIG,
     MILVUS_CONFIG,
     OLLAMA_CONFIG,
-    PATH_CONFIG
+    PATH_CONFIG,
+    STORAGE_CONFIG
 )
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'EMBEDDING_CONFIG',
     'MILVUS_CONFIG',
     'OLLAMA_CONFIG',
-    'PATH_CONFIG'
+    'PATH_CONFIG',
+    'STORAGE_CONFIG'
 ]
