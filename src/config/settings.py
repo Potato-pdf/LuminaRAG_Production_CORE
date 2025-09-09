@@ -43,3 +43,16 @@ PATH_CONFIG = {
     "pdf_directory": os.getenv("PDF_DIRECTORY"),
     "doc_directory": os.getenv("PDF_DIRECTORY"),  # Centralizado en pdfs
 }
+
+# ============================================================================
+# CONFIGURACIÓN DE ALMACENAMIENTO
+# ============================================================================
+
+STORAGE_CONFIG = {
+    "base_dir": "storage",
+    "graphs_dir": "storage/graphs",
+    "cache_dir": "storage/cache",
+    "logs_dir": "storage/logs",
+    "graph_filename": "document_graph.pkl",
+    "graph_path": "storage/graphs/document_graph.pkl"
+}
