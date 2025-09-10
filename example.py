@@ -8,14 +8,14 @@ env_path = Path(".") / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
 
-from db_milvus.connection import connect_milvus
-from db_milvus.schemas.schema_comercial import create_schema_comercial
-from embedding.multilingual import choice_embedding
-from read_docs.read_pdf import read_pdf  # Mantenemos como fallback
-from parse_docs import parse_documents    # Nuevo método con LlamaParse
-from create_vectors.create_vector_milvus import create_vectors
-from model_ai import connect_ollama
-from create_index.create_index_llamaindex import create_index_llamaindex
+from src.db_milvus.connection import connect_milvus
+from src.db_milvus.schemas.schema_comercial import create_schema_comercial
+from src.embedding.multilingual import choice_embedding
+from src.parse_docs import parse_documents    # Método con LlamaParse
+from src.create_vectors.create_vector_milvus import create_vectors
+from src.model_ai import connect_ollama
+# MIGRADO: Usar nueva arquitectura modular
+from src.create_index import IndexOrchestrator
 from src.config import CHUNKING_CONFIG, OLLAMA_CONFIG, PATH_CONFIG
 
 # Import del sistema de grafo integrado
@@ -95,8 +95,7 @@ def main():
         print("Documentos procesados con LlamaParse:", len(documents))
     except Exception as e:
         print(f"Error al usar LlamaParse: {e}")
-        print("Usando método de lectura PDF tradicional como fallback...")
-        documents = read_pdf()
+        return
     
     print("Documentos leídos:", documents)
     
@@ -105,11 +104,11 @@ def main():
     print("Vectores creados:", vector_store)
     llm = connect_ollama()
     
-    # Crear índice usando configuración centralizada de chunking
-    index = create_index_llamaindex(
-        documents=documents, 
-        vector_store=vector_store, 
-        embed_model=embedding_model,
+    # MIGRADO: Usar nueva arquitectura modular
+    orchestrator = IndexOrchestrator(vector_store=vector_store, embed_model=embedding_model)
+    
+    index = orchestrator.create_index(
+        documents=documents,
         **CHUNKING_CONFIG  # Usamos los parámetros desde la configuración centralizada
     )
     print("Índice creado:", index)
