@@ -13,7 +13,7 @@ class PooledHuggingFaceEmbedding:
         mean_pooled = np.mean(token_embeddings, axis=0).tolist()#| saca el promedio columna por columna y lo almacena en una lista
         return mean_pooled
     
-    def get_text_embedding_batch(self, texts: List[str]) -> List[List[float]]:
+    def get_text_embedding_batch(self, texts: List[str]) -> List[List[float]]:#| iteracion de get_text_embedding para una lista de textos
         results = []
         for text in texts:
             results.append(self.get_text_embedding(text))
