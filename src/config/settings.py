@@ -24,7 +24,24 @@ EMBEDDING_CONFIG = {
     "model_name": os.getenv("EMBEDDING_MODEL"),
 }
 
-# Configuración de Milvus
+# Configuración de parsing de documentos
+PARSING_CONFIG = {
+    "result_type": "markdown",  # "text", "markdown", "all" 
+    "language": "es",           # Idioma para LlamaParse
+    "verbose": True,            # Mostrar información del proceso
+    "supported_extensions": [".pdf", ".docx"],  # Extensiones soportadas
+}
+
+# ============================================================================
+# CONFIGURACIÓN SENSIBLE - DESDE .ENV
+# ============================================================================
+
+# API Keys (sensibles)
+API_CONFIG = {
+    "llama_cloud_api_key": os.getenv("LLAMA_CLOUD_API_KEY"),
+}
+
+# Configuración de Milvus (usando variables sensibles)
 MILVUS_CONFIG = {
     "host": os.getenv("MILVUS_HOST"),
     "port": os.getenv("MILVUS_PORT"),
