@@ -43,16 +43,16 @@ def parse_documents(directory_path: str = None, api_key: Optional[str] = None) -
         result = reader.parse(file_path=str(doc_file))
         documents = result.get_markdown_documents()
         
-        # Agregar metadata del archivo
-        for doc in documents:
+        #| Agregar metadata del archivo
+        for doc in documents: 
             doc.metadata.update({
                 'file_name': doc_file.name,
                 'file_path': str(doc_file),
                 'file_type': doc_file.suffix.lower()
             })
         
-        all_documents.extend(documents)
+        all_documents.extend(documents) #| agrega a la lista principal
     
     print(f"✅ Procesamiento completo. Se generaron {len(all_documents)} documentos.")
     
-    return all_documents
+    return all_documents #| Retorna la lista de documentos parseados
