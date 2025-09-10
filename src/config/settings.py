@@ -26,7 +26,7 @@ EMBEDDING_CONFIG = {
 
 # Configuración de parsing de documentos
 PARSING_CONFIG = {
-    "result_type": "markdown",  # "text", "markdown", "all" 
+    "result_type": "all",  # "text", "markdown", "all" 
     "language": "es",           # Idioma para LlamaParse
     "verbose": True,            # Mostrar información del proceso
     "supported_extensions": [".pdf", ".docx"],  # Extensiones soportadas

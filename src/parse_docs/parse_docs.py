@@ -20,26 +20,25 @@ def parse_documents(directory_path: str = None, api_key: Optional[str] = None) -
     )
 
     doc_dir = Path(directory_path)
-    
-    all_files = []
+
+    all_files = [] #| busca los archivos con extenciones definidas en settings
     for ext in PARSING_CONFIG["supported_extensions"]:
         all_files.extend(doc_dir.glob(f"*{ext}"))
     
     if not all_files:
-        print(f"❌ No se encontraron archivos {PARSING_CONFIG['supported_extensions']} en {directory_path}")
+        print(f"No se encontraron archivos {PARSING_CONFIG['supported_extensions']} en {directory_path}")
         return []
     
-    files_by_type = {}
+    files_by_type = {} #| Clasifica por el tipo de archivo
     for ext in PARSING_CONFIG["supported_extensions"]:
         files_by_type[ext] = len([f for f in all_files if f.suffix.lower() == ext])
     
-    print(f"📄 Procesando {len(all_files)} archivos con LlamaParse...")
     for ext, count in files_by_type.items():
-        if count > 0:
+        if count > 0: #| cuenta cada tipo de archivo
             print(f"   - {ext.upper()}: {count}")
 
     all_documents = []
-    for doc_file in all_files:
+    for doc_file in all_files: #| parsea el archivo
         print(f"  🔄 Procesando: {doc_file.name}")
         result = reader.parse(file_path=str(doc_file))
         documents = result.get_markdown_documents()
