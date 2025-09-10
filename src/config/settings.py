@@ -26,7 +26,7 @@ EMBEDDING_CONFIG = {
 
 # Configuración de parsing de documentos
 PARSING_CONFIG = {
-    "result_type": "all",  # "text", "markdown", "all" 
+    "result_type": "markdown",  # "text", "markdown", "json", "structured"
     "language": "es",           # Idioma para LlamaParse
     "verbose": True,            # Mostrar información del proceso
     "supported_extensions": [".pdf", ".docx"],  # Extensiones soportadas
@@ -74,7 +74,7 @@ STORAGE_CONFIG = {
     "graph_path": "storage/graphs/document_graph.pkl"
 }
 
-# En src/config/settings.py agregar:
+# Configuración de fuentes de documentos (para arquitectura modular)
 DOCUMENT_SOURCE_CONFIG = {
     "type": "local",  # "local", "api", "database", etc.
     "parser": "llama_parse"  # "llama_parse", "simple", etc.

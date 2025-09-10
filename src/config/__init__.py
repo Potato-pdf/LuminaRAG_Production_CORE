@@ -11,7 +11,8 @@ from .settings import (
     OLLAMA_CONFIG,
     PATH_CONFIG,
     STORAGE_CONFIG,
-    API_CONFIG
+    API_CONFIG,
+    DOCUMENT_SOURCE_CONFIG
 )
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     'OLLAMA_CONFIG',
     'PATH_CONFIG',
     'STORAGE_CONFIG',
-    'API_CONFIG'
+    'API_CONFIG',
+    'DOCUMENT_SOURCE_CONFIG'
 ]

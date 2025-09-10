@@ -8,14 +8,14 @@ def parse_documents(directory_path: str = None, api_key: Optional[str] = None) -
     # 1. Obtener source configurada
     if DOCUMENT_SOURCE_CONFIG["type"] == "local":
         from .sources.local_source import LocalFileSource
-        source = LocalFileSource(directory_path)
+        source = LocalFileSource()  # Sin parámetros - usa configuración
     # elif DOCUMENT_SOURCE_CONFIG["type"] == "api":
         #from .sources.api_source import APISource  # ← FUTURO
         #source = APISource()
 
     # 2. Obtener parser configurada
     if DOCUMENT_SOURCE_CONFIG["parser"] == "llama_parse":
-        from .parsers.llama_parser import LlamaParseParser
+        from .parsers.llama_parse import LlamaParseParser
         parser = LlamaParseParser(api_key)
     
     # 3. Ejecutar proceso (NO CAMBIA)

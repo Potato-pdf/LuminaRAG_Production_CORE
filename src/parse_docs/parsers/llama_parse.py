@@ -1,8 +1,7 @@
 from typing import List
-from llama_index.readers.llama_parse import LlamaParse
-from llamaindex.reades.llama_parse import LlamaParse
+from llama_parse import LlamaParse
 from llama_index.core import Document
-from src.config import API_CONFIG,PARSING_CONFIG
+from src.config import API_CONFIG, PARSING_CONFIG
 
 class LlamaParseParser:
     def __init__(self, api_key: str = None):
@@ -14,13 +13,12 @@ class LlamaParseParser:
             verbose=PARSING_CONFIG["verbose"]
         )
     
-    def parse_files(self, file_path: str) -> List[Document]:
+    def parse_files(self, file_paths: List) -> List[Document]:
         all_documents = []
 
-        for doc_file in file_path:
+        for doc_file in file_paths:
             print(f"Procesando: {doc_file.name}")
-            result = self.reader.parse(file_path=str(doc_file))
-            documents = result.get_markdown_documents()
+            documents = self.reader.load_data(str(doc_file))
             
             # Agregar metadata del archivo
             for doc in documents:

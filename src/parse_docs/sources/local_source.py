@@ -4,10 +4,11 @@ from src.config import PATH_CONFIG, PARSING_CONFIG
 
 class LocalFileSource:
 
-    def __init__(self, directory_path: str = None):
+    def __init__(self):
+        """Usar siempre la configuración centralizada"""
         self.directory_path = PATH_CONFIG["pdf_directory"]
 
-    def get_files_path(self) -> List[Path]:
+    def get_file_paths(self) -> List[Path]:
         doc_dir = Path(self.directory_path)
         all_files = []
         for ext in PARSING_CONFIG["supported_extensions"]:

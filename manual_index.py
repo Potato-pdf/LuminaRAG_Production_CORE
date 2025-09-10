@@ -24,7 +24,7 @@ def manual_indexing():
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from src.parse_docs import parse_documents
     from src.document_graph import create_simple_rag_graph
-    from src.config import CHUNKING_CONFIG, EMBEDDING_CONFIG, MILVUS_CONFIG, PATH_CONFIG, STORAGE_CONFIG
+    from src.config import CHUNKING_CONFIG, EMBEDDING_CONFIG, MILVUS_CONFIG, PATH_CONFIG, STORAGE_CONFIG, API_CONFIG
     
     print("🔧 INDEXACIÓN MANUAL DIRECTA")
     print("="*40)
@@ -68,11 +68,8 @@ def manual_indexing():
     
     # 3. Procesar documentos
     print("📄 Procesando documentos...")
-    api_key = os.getenv("LLAMA_CLOUD_API_KEY")
-    documents = parse_documents(
-        directory_path=PATH_CONFIG["pdf_directory"],
-        api_key=api_key
-    )
+    api_key = API_CONFIG["llama_cloud_api_key"]
+    documents = parse_documents(api_key=api_key)
     print(f"✅ {len(documents)} documentos procesados")
     
     # 4. Configurar embedding
