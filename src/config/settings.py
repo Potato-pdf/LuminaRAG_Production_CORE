@@ -73,3 +73,9 @@ STORAGE_CONFIG = {
     "graph_filename": "document_graph.pkl",
     "graph_path": "storage/graphs/document_graph.pkl"
 }
+
+# En src/config/settings.py agregar:
+DOCUMENT_SOURCE_CONFIG = {
+    "type": "local",  # "local", "api", "database", etc.
+    "parser": "llama_parse"  # "llama_parse", "simple", etc.
+}
