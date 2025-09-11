@@ -1,256 +1,225 @@
-# 🔬 Tests del Sistema RAG con Milvus Normal
+# 🔬 Tests del Sistema RAG Jerárquico
 
-Esta carpeta contiene tests completos para verificar todo el flujo del sistema RAG usando **Milvus normal** (no lite) y **Ollama/Llama3.2**.
+Esta carpeta contiene tests para verificar la **nueva arquitectura jerárquica** del sistema RAG con **Milvus** y **Ollama/Llama3.2**.
 
-## 📁 Archivos de Test
+## 📁 Archivos de Test Actuales
 
-### 1. `test_embedding_milvus.py` - Test de Indexación
-**Propósito:** Probar proceso completo de embedding e indexación
+### 1. `test_refactored_architecture.py` - Test Arquitectura Jerárquica
+**Propósito:** Probar la nueva arquitectura jerárquica completa
 ```bash
-python test/test_embedding_milvus.py
+python test/test_refactored_architecture.py
 ```
 
-**Qué hace cada parte:**
-- ✅ **Verificar configuración** → Lee variables de .env
-- ✅ **Conectar a Milvus normal** → Usa host/port/user/password
-- ✅ **Configurar embeddings** → Modelo multilingüe HuggingFace
-- ✅ **Procesar PDF** → LlamaParse extrae contenido
-- ✅ **Crear índice vectorial** → Almacena en Milvus
-- ✅ **Verificar almacenamiento** → Confirma documentos guardados
+**Qué verifica:**
+- ✅ **Grafos Jerárquicos** → Árboles por documento con nodos raíz
+- ✅ **Meta-Grafo** → Conexiones entre documentos
+- ✅ **PageRank Especializado** → Múltiples estrategias de análisis
+- ✅ **Indexación Milvus** → Schema jerárquico con campos especializados
+- ✅ **Consultas Avanzadas** → Contexto enriquecido y estrategias múltiples
 
-### 2. `test_query_ollama.py` - Test de Consultas
-**Propósito:** Probar consultas RAG con Ollama/Llama3.2
+### 2. `hybrid_retriever.py` - Sistema de Recuperación Híbrido
+**Propósito:** Implementación avanzada de recuperación
 ```bash
-python test/test_query_ollama.py
+python test/hybrid_retriever.py
 ```
 
-**Qué hace cada parte:**
-- ✅ **Verificar Ollama** → Conecta a localhost:11434
-- ✅ **Cargar índice** → Lee datos de Milvus
-- ✅ **Configurar RAG** → Motor de consultas + LLM
-- ✅ **Consultas automáticas** → 3 preguntas predefinidas
-- ✅ **Modo interactivo** → Pregunta lo que quieras
+**Características:**
+- 🔍 **Recuperación Semántica** → Búsqueda por similitud vectorial
+- 📊 **Ranking Jerárquico** → Priorización basada en importancia del grafo
+- 🌐 **Contexto Multi-documento** → Información cruzada entre documentos
 
-### 3. `test_complete_flow.py` - Test End-to-End
-**Propósito:** Probar flujo completo desde PDF hasta consultas
+### 3. `scalability_analysis.py` - Análisis de Escalabilidad
+**Propósito:** Evaluar rendimiento del sistema jerárquico
 ```bash
-python test/test_complete_flow.py
+python test/scalability_analysis.py
 ```
 
-**Qué hace cada parte:**
-- ✅ **Verificación inicial** → Archivos y configuración
-- ✅ **Fase 1: Indexación** → PDF → Embeddings → Milvus
-- ✅ **Fase 2: Consultas** → Milvus → LLM → Respuestas
-- ✅ **Verificación final** → Todo el sistema funcionando
+**Métricas evaluadas:**
+- ⚡ **Tiempo de indexación** → Performance con múltiples documentos
+- 🧠 **Uso de memoria** → Eficiencia de grafos jerárquicos
+- 🔄 **Velocidad de consulta** → Respuesta con diferentes estrategias
 
-## ⚙️ Configuración Necesaria
+## ⚙️ Configuración para Nueva Arquitectura
 
 ### Variables en `.env`
 ```bash
-# Obligatorias para tests
-LLAMA_CLOUD_API_KEY=llx-xxx
+# Configuración básica
+CHUNK_SIZE=2000
+CHUNK_OVERLAP=100
+CHUNK_WINDOW_SIZE=3
+
+# Embeddings multilingües
+EMBEDDING_MODEL=efederici/e5-base-multilingual-4096
+EMBEDDING_DIM=768
+
+# Milvus (normal)
 MILVUS_HOST=localhost
 MILVUS_PORT=19530
 MILVUS_USER=minioadmin
 MILVUS_PASSWORD=minioadmin
-OLLAMA_BASE_URL=http://localhost:11434
+
+# Ollama local
+OLLAMA_BASE_URL=http://localhost:11435
 OLLAMA_MODEL=llama3.2
-EMBEDDING_MODEL=efederici/e5-base-multilingual-4096
-EMBEDDING_DIM=768
+
+# Rutas
+PDF_DIRECTORY=pdfs
 ```
 
 ### Servicios Requeridos
 
 #### 1. **Milvus Standalone**
 ```bash
-# Instalar con Docker
-docker run -d --name milvus-standalone \
-  -p 19530:19530 \
-  -v $(pwd)/milvus:/var/lib/milvus \
-  milvusdb/milvus:latest standalone
+# En directorio Lumina_Milvus
+docker-compose up -d
 ```
 
 #### 2. **Ollama con Llama3.2**
 ```bash
-# Instalar Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Descargar modelo
-ollama pull llama3.2
-
-# Ejecutar servidor
-ollama serve
+# En directorio LuminaMO_Model_IA  
+docker-compose up -d
 ```
 
-## 🚀 Cómo Usar los Tests
+## 🚀 Flujo de Testing Jerárquico
 
-### Opción A: Test Individual
+### Opción A: Test Completo de Arquitectura
 ```bash
-# 1. Solo indexación
-python test/test_embedding_milvus.py
-
-# 2. Solo consultas (después del paso 1)
-python test/test_query_ollama.py
+# Verificar nueva arquitectura jerárquica
+python test/test_refactored_architecture.py
 ```
 
-### Opción B: Test Completo
+### Opción B: Análisis Individual
 ```bash
-# Todo el flujo de una vez
-python test/test_complete_flow.py
+# 1. Evaluar escalabilidad
+python test/scalability_analysis.py
+
+# 2. Probar recuperación híbrida
+python test/hybrid_retriever.py
 ```
 
-### Opción C: Verificar servicios
+### Opción C: Verificación del Sistema
 ```bash
-# Verificar Milvus
-curl http://localhost:19530/health
-
-# Verificar Ollama
-curl http://localhost:11434/api/tags
+# Verificar que todo esté funcionando
+python check_system.py
 ```
 
-## 📊 Explicación Técnica Detallada
+## 📊 Arquitectura Jerárquica Explicada
 
-### 🔄 Flujo de Embedding (test_embedding_milvus.py)
+### 🌳 Estructura de Grafos por Documento
 
 ```python
-# 1. CONECTAR A MILVUS NORMAL
-connections.connect(
-    host="localhost",      # ← Tu servidor Milvus
-    port=19530,           # ← Puerto estándar Milvus
-    user="minioadmin",    # ← Usuario por defecto
-    password="minioadmin" # ← Password por defecto
-)
+# Cada documento forma un árbol binario balanceado
+Document_1/
+├── Root_Node (nivel 0)
+│   ├── Branch_A (nivel 1)
+│   │   ├── Chunk_1 (nivel 2)
+│   │   └── Chunk_2 (nivel 2)
+│   └── Branch_B (nivel 1)
+│       ├── Chunk_3 (nivel 2)
+│       └── Chunk_4 (nivel 2)
 
-# 2. CONFIGURAR EMBEDDINGS
-embedding_model = HuggingFaceEmbedding(
-    model_name="efederici/e5-base-multilingual-4096",  # ← Modelo multilingüe
-    max_length=512                                     # ← Tokens máximos
-)
-
-# 3. PROCESAR PDF
-parser = LlamaParse(
-    api_key="llx-xxx",    # ← Tu API key de LlamaCloud
-    result_type="markdown" # ← Formato de salida
-)
-documents = parser.load_data("archivo.pdf")  # ← Extraer contenido
-
-# 4. CREAR VECTOR STORE
-vector_store = MilvusVectorStore(
-    host="localhost",     # ← Mismo host que conexión
-    port=19530,          # ← Mismo puerto
-    collection_name="mi_coleccion",  # ← Nombre único
-    dim=768              # ← Dimensión del modelo embedding
-)
-
-# 5. INDEXAR DOCUMENTOS
-index = VectorStoreIndex.from_documents(
-    documents,           # ← Documentos procesados
-    vector_store=vector_store  # ← Destino en Milvus
-)
+# Las raíces se conectan en meta-grafo
+Root_Doc1 ←→ Root_Doc2 ←→ Root_Doc3
 ```
 
-### 🔍 Flujo de Consultas (test_query_ollama.py)
+### 🔍 Estrategias de Consulta Jerárquica
 
 ```python
-# 1. CONFIGURAR LLM
-llm = Ollama(
-    model="llama3.2",                    # ← Modelo local descargado
-    base_url="http://localhost:11434",   # ← Servidor Ollama
-    temperature=0.1                      # ← Respuestas consistentes
-)
+# 1. MIXED: Combina todos los enfoques
+strategy = "mixed"
+results = hierarchical_query(query, strategy=strategy)
 
-# 2. CARGAR ÍNDICE EXISTENTE
-vector_store = MilvusVectorStore(
-    host="localhost", port=19530,        # ← Conectar a Milvus
-    collection_name="mi_coleccion"       # ← Colección con datos
-)
-index = VectorStoreIndex.from_vector_store(vector_store)
+# 2. ROOTS_FIRST: Prioriza nodos raíz
+strategy = "roots_first" 
+results = hierarchical_query(query, strategy=strategy)
 
-# 3. CREAR MOTOR DE CONSULTAS
-retriever = VectorIndexRetriever(
-    index=index,
-    similarity_top_k=5   # ← Recuperar 5 documentos más similares
-)
-query_engine = RetrieverQueryEngine(retriever=retriever)
+# 3. WITHIN_DOCS: Búsqueda dentro de documentos
+strategy = "within_docs"
+results = hierarchical_query(query, strategy=strategy)
 
-# 4. REALIZAR CONSULTA RAG
-response = query_engine.query("¿Cuál es el tema principal?")
-# Flujo interno:
-# Tu pregunta → Embedding → Búsqueda en Milvus → 
-# Documentos relevantes → Contexto + Pregunta → LLM → Respuesta
+# 4. META_ONLY: Solo conexiones meta-grafo  
+strategy = "meta_only"
+results = hierarchical_query(query, strategy=strategy)
 ```
 
-## 🎯 Puntos Clave de Configuración
+### � Schema Milvus Jerárquico
 
-### Para Cambiar a Tu Servidor Milvus:
 ```python
-# En todos los tests, cambiar:
-MILVUS_HOST = "tu-servidor-milvus.com"  # ← Tu IP/dominio
-MILVUS_PORT = 19530                     # ← Puerto (19530 estándar)
-MILVUS_USER = "tu-usuario"              # ← Tu usuario
-MILVUS_PASSWORD = "tu-password"         # ← Tu contraseña
+# Campos especializados para arquitectura jerárquica
+schema = {
+    "chunk_id": "string",           # ID único del chunk
+    "content": "string",            # Contenido del chunk
+    "embedding": "float_vector",    # Vector 768-dim
+    
+    # Campos jerárquicos nuevos
+    "document_name": "string",      # Documento origen
+    "is_root": "bool",             # ¿Es nodo raíz?
+    "tree_level": "int",           # Nivel en el árbol
+    "parent_chunk": "string",      # ID del chunk padre
+    "hierarchical_importance": "float"  # Score PageRank jerárquico
+}
 ```
 
-### Para Usar Otro Modelo LLM:
-```python
-# En test_query_ollama.py y test_complete_flow.py:
-OLLAMA_MODEL = "llama3.1"               # ← Cambiar modelo
-# Ejecutar: ollama pull llama3.1
-```
+## 🎯 Migración desde Arquitectura Anterior
 
-### Para Otro Modelo de Embeddings:
-```python
-# Cambiar en .env:
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384  # ← Ajustar dimensión del nuevo modelo
-```
+### Scripts Eliminados (Legacy):
+- ❌ `manual_index_legacy.py` (era `manual_index.py`)
+- ❌ `simple_query_legacy.py` (era `simple_query.py`)  
+- ❌ `example.py` (ejemplo obsoleto)
+- ❌ `test_complete_flow.py` (flujo no jerárquico)
+- ❌ `test_embedding_milvus.py` (embedding simple)
+- ❌ `test_query_ollama.py` (consultas simples)
+- ❌ `test_chunking.py` (chunking no jerárquico)
+- ❌ `test_graph.py` (grafo simple)
+- ❌ `test_llama_parse.py` (parsing básico)
 
-## 🔧 Solución de Problemas
+### Scripts Actuales (Jerárquicos):
+- ✅ `index.py` (indexador jerárquico principal)
+- ✅ `query.py` (sistema de consultas avanzado)
+- ✅ `utils.py` (herramientas de gestión)
+- ✅ `migrate_graph.py` (migración automática)
+- ✅ `check_system.py` (verificación completa)
 
-### Error: "Cannot connect to Milvus"
+## �️ Solución de Problemas Jerárquicos
+
+### Error: "Grafo jerárquico no encontrado"
 ```bash
-# Verificar Milvus
-docker ps | grep milvus
-curl http://localhost:19530/health
+# Migrar desde grafo simple
+python migrate_graph.py
 ```
 
-### Error: "Ollama not responding"
+### Error: "Schema jerárquico no compatible"
 ```bash
-# Verificar Ollama
-ollama list
-curl http://localhost:11434/api/tags
+# Recrear colección con nuevo schema
+python index.py
 ```
 
-### Error: "LlamaParse API key"
+### Error: "Estrategia jerárquica no reconocida"
 ```bash
-# Verificar API key en .env
-echo $LLAMA_CLOUD_API_KEY
+# Usar estrategias válidas: mixed, roots_first, within_docs, meta_only
+python query.py
 ```
 
-### Error: "Collection not found"
-```bash
-# Ejecutar indexación primero
-python test/test_embedding_milvus.py
+## 📈 Resultados Esperados de la Nueva Arquitectura
+
+### test_refactored_architecture.py exitoso:
+```
+✅ Grafo jerárquico cargado: 6 documentos, 120 chunks
+✅ Meta-grafo creado: 117 conexiones meta-documento
+✅ PageRank jerárquico calculado: estrategias disponibles
+✅ Schema Milvus jerárquico: 8 campos especializados
+✅ Indexación jerárquica: 120 chunks con información de árbol
+✅ Consultas avanzadas: 4 estrategias funcionando
+🎉 ¡ARQUITECTURA JERÁRQUICA COMPLETAMENTE FUNCIONAL!
 ```
 
-## 📈 Resultados Esperados
+### Ventajas de la Nueva Arquitectura:
+- 🌳 **Organización mejorada**: Árboles por documento
+- 🔍 **Consultas inteligentes**: Múltiples estrategias especializadas  
+- 📊 **Escalabilidad**: Meta-grafo para análisis cruzado
+- ⚡ **Performance**: PageRank jerárquico optimizado
+- 🧠 **Contexto rico**: Información estructural en respuestas
 
-### test_embedding_milvus.py exitoso:
-```
-✅ Conectado a Milvus en localhost:19530
-✅ Documentos extraídos: 549
-✅ Índice vectorial creado exitosamente
-✅ Documentos almacenados: 10
-🎉 ¡INDEXACIÓN COMPLETADA EXITOSAMENTE!
-```
+---
 
-### test_query_ollama.py exitoso:
-```
-✅ Ollama está ejecutándose en http://localhost:11434
-✅ Modelo llama3.2 está disponible
-✅ Colección encontrada: test_arquitectura_completa (10 documentos)
-🤖 RESPUESTA: El documento trata sobre arquitectura de software...
-🎉 ¡SISTEMA RAG COMPLETO FUNCIONANDO!
-```
-
-¡Estos tests te darán total confianza de que el sistema funciona antes de cambiar de computadora!
+🌟 **Nueva arquitectura jerárquica para análisis de documentos de siguiente nivel**
