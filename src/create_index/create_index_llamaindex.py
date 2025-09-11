@@ -22,7 +22,7 @@ def create_index_llamaindex( #| Funcion que dividide documentos en chunks y crea
         chunk_overlap=chunk_overlap                  #| Tokens que se repiten entre chunks
     )
     print(f"Configuración de chunks: tamaño={chunk_size}, solapamiento={chunk_overlap}, ventana={chunk_window_size}")
-    nodes = node_parser.get_nodes_from_documents(documents)#aqui se transforma el documento en una lista de nodos
+    nodes = node_parser.get_nodes_from_documents(documents)#| aqui se transforma el documento en una lista de nodos
     print(f"Documentos divididos en {len(nodes)} chunks/nodos")
     if len(nodes) > 0:
         print(f"Ejemplo de chunk: {nodes[0].get_content(metadata_mode=MetadataMode.NONE)[:100]}...")
