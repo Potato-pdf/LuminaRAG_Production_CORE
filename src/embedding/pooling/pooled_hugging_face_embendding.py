@@ -9,12 +9,17 @@ class PooledHuggingFaceEmbedding:
         self.embed_dim = EMBEDDING_CONFIG["embedding_dim"]#| dimencion del embending
     
     def get_text_embedding(self, text: str) -> List[float]:# | crea el embending de un texto
-        token_embeddings = self.base_model._get_raw_embedding(text)
-        mean_pooled = np.mean(token_embeddings, axis=0).tolist()#| saca el promedio columna por columna y lo almacena en una lista
-        return mean_pooled
+        # Usar la API correcta de HuggingFaceEmbedding
+        embedding = self.base_model.get_text_embedding(text)
+        return embedding
     
     def get_text_embedding_batch(self, texts: List[str]) -> List[List[float]]:#| iteracion de get_text_embedding para una lista de textost
-        results = []
-        for text in texts:
-            results.append(self.get_text_embedding(text))
-        return results  
+        # Usar método batch nativo si está disponible, sino usar iteración
+        try:
+            return self.base_model.get_text_embedding_batch(texts)
+        except AttributeError:
+            # Fallback a iteración manual
+            results = []
+            for text in texts:
+                results.append(self.get_text_embedding(text))
+            return results  

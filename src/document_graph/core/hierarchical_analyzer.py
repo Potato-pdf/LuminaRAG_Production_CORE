@@ -9,7 +9,8 @@ Analizador especializado para la arquitectura jerárquica:
 """
 
 import networkx as nx
-from typing import List, Tuple, Dict, Optio    # Meta-grafo eliminado - método _calculate_cross_doc_connectivity removidofrom .graph_analyzer import GraphAnalyzer
+from typing import List, Tuple, Dict, Optional
+from .graph_analyzer import GraphAnalyzer
 
 
 class HierarchicalGraphAnalyzer(GraphAnalyzer):

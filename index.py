@@ -93,8 +93,12 @@ def main():
         print("❌ Error en inserción de datos jerárquicos")
         return False
     
-    # 9. Resumen final
-    print_final_summary(collection_name, hierarchical_graph)
+    # 9. Crear sistema FAISS-GPU optimizado
+    print("🚀 Creando sistema FAISS-GPU optimizado...")
+    faiss_success = create_faiss_system(hierarchical_graph)
+    
+    # 10. Resumen final
+    print_final_summary(collection_name, hierarchical_graph, faiss_success)
     
     return True
 
@@ -290,7 +294,38 @@ def calculate_hierarchical_importance(chunk_id: str, hierarchical_graph, is_root
     except:
         return 1.5 if is_root else 1.0
 
-def print_final_summary(collection_name: str, hierarchical_graph):
+def create_faiss_system(hierarchical_graph) -> bool:
+    """Crear sistema FAISS-GPU desde el grafo jerárquico"""
+    try:
+        from src.FAISS.faiss_integration import create_faiss_system_from_hierarchical, save_faiss_system
+        import faiss
+        
+        # Mostrar información de GPU
+        gpu_count = faiss.get_num_gpus()
+        print(f"🔍 GPUs detectadas: {gpu_count}")
+        
+        # Crear sistema FAISS
+        faiss_system = create_faiss_system_from_hierarchical(hierarchical_graph)
+        
+        if not faiss_system.is_built:
+            print("❌ Error creando sistema FAISS-GPU")
+            return False
+        
+        # Guardar sistema FAISS
+        success = save_faiss_system(faiss_system)
+        
+        if success:
+            print("✅ Sistema FAISS-GPU creado y guardado exitosamente")
+            faiss_system.print_system_summary()
+        
+        return success
+        
+    except Exception as e:
+        print(f"❌ Error creando sistema FAISS-GPU: {e}")
+        print("💡 Tip: Verificar instalación de CUDA para aceleración GPU")
+        return False
+
+def print_final_summary(collection_name: str, hierarchical_graph, faiss_success: bool = False):
     """Imprimir resumen final del indexing"""
     from src.config import EMBEDDING_CONFIG
     
@@ -310,8 +345,19 @@ def print_final_summary(collection_name: str, hierarchical_graph):
     print(f"\n🌳 ARQUITECTURA JERÁRQUICA:")
     hierarchical_graph.print_hierarchy_summary()
     
-    print(f"\n🎉 ¡INDEXACIÓN JERÁRQUICA COMPLETADA!")
-    print(f"💡 Uso: python3 query.py")
+    # Información del sistema FAISS
+    if faiss_success:
+        print(f"\n🚀 SISTEMA FAISS-GPU:")
+        print(f"   ✅ Índice FAISS-GPU creado exitosamente")
+        print(f"   🔍 Búsqueda optimizada por raíces")
+        print(f"   ⚡ Aceleración GPU disponible")
+        print(f"   💾 Rendimiento mejorado para consultas")
+    
+    print(f"\n🎉 ¡INDEXACIÓN COMPLETA FINALIZADA!")
+    print(f"💡 Sistemas disponibles:")
+    print(f"   🌳 python3 query.py        # Sistema jerárquico tradicional")
+    if faiss_success:
+        print(f"   🚀 python3 query_faiss.py   # Sistema FAISS-GPU optimizado (RECOMENDADO)")
     print("="*60)
 
 if __name__ == "__main__":
