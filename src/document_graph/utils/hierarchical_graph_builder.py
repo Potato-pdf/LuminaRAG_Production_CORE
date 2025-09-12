@@ -187,6 +187,5 @@ class HierarchicalGraphBuilder:
         return None
     
     def get_meta_graph_connections(self) -> List[Tuple[str, str]]:
-        """Meta-grafo eliminado - sin conexiones entre documentos"""
         return []
         return []
