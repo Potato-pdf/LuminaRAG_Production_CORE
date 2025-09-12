@@ -221,9 +221,10 @@ class HierarchicalDocumentGraph(SimpleDocumentGraph):
             print()
         
         stats = self.get_hierarchical_stats()
-        print(f"🌐 META-GRAFO:")
-        print(f"   🔗 Conexiones entre documentos: {stats.get('meta_graph_connections', 0)}")
-        print(f"   📈 Conectividad cruzada: {stats.get('cross_document_connectivity', 0):.2%}")
+        print(f"🌐 DOCUMENTOS INDEPENDIENTES:")
+        print(f"   � Total documentos: {stats.get('documents_count', 0)}")
+        print(f"   🌿 Raíces independientes: {stats.get('document_roots', 0)}")
+        print(f"   📊 Sin conexiones entre documentos")
         print("=" * 50)
     
     # ========================================================================

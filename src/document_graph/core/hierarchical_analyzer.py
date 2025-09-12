@@ -9,8 +9,7 @@ Analizador especializado para la arquitectura jerárquica:
 """
 
 import networkx as nx
-from typing import List, Tuple, Dict, Optional, Set
-from .graph_analyzer import GraphAnalyzer
+from typing import List, Tuple, Dict, Optio    # Meta-grafo eliminado - método _calculate_cross_doc_connectivity removidofrom .graph_analyzer import GraphAnalyzer
 
 
 class HierarchicalGraphAnalyzer(GraphAnalyzer):
@@ -41,7 +40,8 @@ class HierarchicalGraphAnalyzer(GraphAnalyzer):
         elif strategy == "within_docs":
             return self._get_within_docs_ranking(top_k)
         elif strategy == "meta_only":
-            return self._get_meta_graph_ranking(top_k)
+            # Meta-grafo eliminado - usar estrategia mixta en su lugar
+            return self._get_mixed_ranking(top_k)
         else:  # mixed (default)
             return self._get_mixed_hierarchical_ranking(top_k)
     
@@ -93,23 +93,7 @@ class HierarchicalGraphAnalyzer(GraphAnalyzer):
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_k]
     
-    def _get_meta_graph_ranking(self, top_k: int) -> List[Tuple[str, float, str]]:
-        """Solo considerar el meta-grafo (raíces)"""
-        root_ids = list(self._document_roots.values())
-        meta_subgraph = self._graph.subgraph(root_ids)
-        
-        if meta_subgraph.number_of_nodes() == 0:
-            return []
-        
-        meta_pagerank = nx.pagerank(meta_subgraph)
-        results = []
-        
-        for root_id, score in meta_pagerank.items():
-            doc_name = self._get_document_for_chunk(root_id)
-            results.append((root_id, score, doc_name))
-        
-        results.sort(key=lambda x: x[1], reverse=True)
-        return results[:top_k]
+    # Meta-grafo eliminado - método _get_meta_graph_ranking removido
     
     def _get_mixed_hierarchical_ranking(self, top_k: int) -> List[Tuple[str, float, str]]:
         """Estrategia mixta: combina PageRank global con boost jerárquico"""
@@ -134,10 +118,9 @@ class HierarchicalGraphAnalyzer(GraphAnalyzer):
         if chunk_id in self._document_roots.values():
             boost += 0.5
         
-        # Boost por conectividad en meta-grafo
-        metadata = self._graph.nodes.get(chunk_id, {})
-        if metadata.get('in_meta_graph', False):
-            boost += 0.3
+        # Meta-grafo eliminado - solo boost por raíz de documento
+        if chunk_id in self._document_roots.values():
+            boost += 0.5
         
         # Boost por profundidad en el árbol (menos profundo = más importante)
         depth = self._calculate_tree_depth(chunk_id)
@@ -231,27 +214,17 @@ class HierarchicalGraphAnalyzer(GraphAnalyzer):
         hierarchical_stats = {
             'documents_count': len(self._document_graphs),
             'document_roots': len(self._document_roots),
-            'meta_graph_connections': self._count_meta_connections(),
+            'meta_graph_connections': 0,  # Meta-grafo eliminado
             'avg_chunks_per_document': self._calculate_avg_chunks_per_doc(),
             'document_tree_depths': self._calculate_tree_depths(),
-            'cross_document_connectivity': self._calculate_cross_doc_connectivity()
+            'cross_document_connectivity': 0.0  # Sin conexiones entre documentos
         }
         
         # Combinar estadísticas
         base_stats.update(hierarchical_stats)
         return base_stats
     
-    def _count_meta_connections(self) -> int:
-        """Contar conexiones del meta-grafo"""
-        root_ids = set(self._document_roots.values())
-        meta_connections = 0
-        
-        for node1 in root_ids:
-            for node2 in self._graph.neighbors(node1):
-                if node2 in root_ids:
-                    meta_connections += 1
-        
-        return meta_connections // 2  # Dividir por 2 porque contamos cada arista dos veces
+    # Meta-grafo eliminado - método _count_meta_connections removido
     
     def _calculate_avg_chunks_per_doc(self) -> float:
         """Calcular promedio de chunks por documento"""
@@ -286,15 +259,7 @@ class HierarchicalGraphAnalyzer(GraphAnalyzer):
         
         return depths
     
-    def _calculate_cross_doc_connectivity(self) -> float:
-        """Calcular conectividad entre documentos"""
-        if len(self._document_roots) < 2:
-            return 0.0
-        
-        total_possible = len(self._document_roots) * (len(self._document_roots) - 1) // 2
-        actual_connections = self._count_meta_connections()
-        
-        return actual_connections / total_possible if total_possible > 0 else 0.0
+    # Meta-grafo eliminado - sin conectividad entre documentos
     
     # ========================================================================
     # MÉTODOS AUXILIARES

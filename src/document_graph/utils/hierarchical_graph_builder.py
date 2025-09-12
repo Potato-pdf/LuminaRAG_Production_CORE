@@ -33,8 +33,7 @@ class HierarchicalGraphBuilder:
         # 3. Crear grafos individuales por documento (árboles)
         self._create_document_trees(docs_chunks)
         
-        # 4. Crear meta-grafo conectando raíces
-        self._create_meta_graph()
+        # Meta-grafo eliminado - solo árboles independientes por documento
         
         print(f"✅ Arquitectura jerárquica creada:")
         print(f"   📄 {len(self._document_graphs)} documentos")
@@ -142,29 +141,7 @@ class HierarchicalGraphBuilder:
             current_level = next_level
             level_num += 1
     
-    def _create_meta_graph(self) -> None:
-        """Crear meta-grafo conectando raíces de documentos"""
-        root_chunks = list(self._document_roots.values())
-        
-        if len(root_chunks) < 2:
-            print("   ⚠️  Solo hay 1 documento, no se crea meta-grafo")
-            return
-        
-        print(f"   🌐 Creando meta-grafo con {len(root_chunks)} raíces...")
-        
-        # Conectar raíces en secuencia (puede cambiarse por otras estrategias)
-        for i in range(len(root_chunks) - 1):
-            root1 = root_chunks[i]
-            root2 = root_chunks[i + 1]
-            # Peso mayor para conexiones de meta-grafo
-            self._manager.connect_chunks(root1, root2, weight=2.0)
-            print(f"      🔗 META: {root1} ↔ {root2}")
-        
-        # Marcar conexiones del meta-grafo
-        for root_chunk in root_chunks:
-            metadata = self._manager.get_chunk_metadata(root_chunk)
-            if metadata:
-                metadata['in_meta_graph'] = True
+    # Meta-grafo eliminado - cada documento es un árbol independiente
     
     def _validate_chunk_data(self, chunk_data: Dict) -> None:
         """Validar datos de chunk"""
@@ -210,11 +187,6 @@ class HierarchicalGraphBuilder:
         return None
     
     def get_meta_graph_connections(self) -> List[Tuple[str, str]]:
-        """Obtener conexiones del meta-grafo"""
-        connections = []
-        roots = list(self._document_roots.values())
-        
-        for i in range(len(roots) - 1):
-            connections.append((roots[i], roots[i + 1]))
-        
-        return connections
+        """Meta-grafo eliminado - sin conexiones entre documentos"""
+        return []
+        return []

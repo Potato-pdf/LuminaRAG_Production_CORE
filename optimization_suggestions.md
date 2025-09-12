@@ -101,8 +101,54 @@ is_connected: True
 | 10         | 9      | 45       | 9        |
 | 20         | 19     | 190      | 19       |
 
-## 🚀 RECOMENDACIÓN
+## � ANÁLISIS DE ESCALABILIDAD
 
-Para sistemas RAG con múltiples documentos:
+### **PROBLEMA CON META-GRAFO COMPLETO:**
+
+| Documentos | Conexiones | Memoria RAM | Performance |
+|------------|------------|-------------|-------------|
+| 10         | 45         | ✅ ~1KB     | ✅ Rápido   |
+| 100        | 4,950      | ⚠️ ~100KB   | ⚠️ Lento    |
+| 1,000      | 499,500    | 🔥 ~10MB    | 🔥 COLAPSO  |
+| 10,000     | 49,995,000 | 💀 ~1GB     | 💀 IMPOSIBLE |
+
+### **Meta-grafo con 1000 documentos:**
+```python
+conexiones = 1000 * 999 / 2 = 499,500 conexiones
+memoria_ram ≈ 10MB solo para conexiones
+pagerank_time ≈ varios minutos
+milvus_timeout = True
+```
+
+## 🚀 RECOMENDACIÓN ESCALABLE
+
+### **Meta-grafo Adaptativo por Cantidad:**
 - **≤ 10 documentos:** Meta-grafo COMPLETO
-- **> 10 documentos:** Meta-grafo en ESTRELLA o CADENA
+- **11-50 documentos:** Meta-grafo en ESTRELLA  
+- **51-500 documentos:** Meta-grafo en CADENA con CLUSTERS
+- **> 500 documentos:** Meta-grafo JERÁRQUICO multinivel
+
+### **Estrategia por Clusters (Recomendada para 100+ docs):**
+```python
+# Agrupar documentos por similitud temática
+cluster_1 = [doc1, doc2, doc3]  # Finanzas
+cluster_2 = [doc4, doc5, doc6]  # Legal  
+cluster_3 = [doc7, doc8, doc9]  # RRHH
+
+# Meta-grafo híbrido:
+# 1. Conexión completa DENTRO de cada cluster
+# 2. Conexión en estrella ENTRE clusters
+```
+
+### **Implementación Escalable:**
+```python
+def create_adaptive_meta_graph(document_count):
+    if document_count <= 10:
+        return "complete"  # O(n²) acceptable
+    elif document_count <= 50:  
+        return "star"     # O(n) with hub
+    elif document_count <= 500:
+        return "clustered"  # O(k*n/k²) where k=clusters
+    else:
+        return "hierarchical"  # O(log n) levels
+```
