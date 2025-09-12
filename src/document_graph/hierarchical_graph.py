@@ -4,30 +4,75 @@
 
 Implementación de la arquitectura jerárquica:
 - Grafos individuales por documento (árboles)
-- Meta-grafo conectando raíces
+- Raíces independientes sin conexiones entre documentos
 - Análisis jerárquico especializado
 """
 
 from typing import List, Dict, Optional, Tuple
 import networkx as nx
-from .simple_graph import SimpleDocumentGraph
+from .core.graph_manager import GraphManager
 from .core.hierarchical_analyzer import HierarchicalGraphAnalyzer
 from .utils.hierarchical_graph_builder import HierarchicalGraphBuilder
 
 
-class HierarchicalDocumentGraph(SimpleDocumentGraph):
+class HierarchicalDocumentGraph:
     """
-    Grafo jerárquico que extiende SimpleDocumentGraph
-    Mantiene compatibilidad pero agrega funcionalidad jerárquica
+    Grafo jerárquico independiente con árboles por documento
+    Sin dependencias del SimpleDocumentGraph
     """
     
     def __init__(self):
         """Inicializar grafo jerárquico"""
-        super().__init__()
+        self._manager = GraphManager()
         self._hierarchical_analyzer = None
         self._document_roots = {}  # doc_name -> root_chunk_id
         self._document_graphs = {}  # doc_name -> list[chunk_ids]
         self._is_hierarchical = False
+    
+    # ========================================================================
+    # MÉTODOS BÁSICOS (anteriormente heredados de SimpleDocumentGraph)
+    # ========================================================================
+    
+    def add_chunk(self, chunk_id: str, content: str, metadata: Dict = None) -> None:
+        """Agregar chunk al grafo"""
+        self._manager.add_chunk(chunk_id, content, metadata)
+        self._invalidate_hierarchical_analyzer()
+
+    def connect_chunks(self, chunk1_id: str, chunk2_id: str, weight: float = 1.0) -> bool:
+        """Conectar dos chunks"""
+        result = self._manager.connect_chunks(chunk1_id, chunk2_id, weight)
+        self._invalidate_hierarchical_analyzer()
+        return result
+    
+    def get_chunk_content(self, chunk_id: str) -> Optional[str]:
+        """Obtener contenido de un chunk"""
+        return self._manager.get_chunk_content(chunk_id)
+    
+    def chunk_exists(self, chunk_id: str) -> bool:
+        """Verificar si un chunk existe"""
+        return self._manager.chunk_exists(chunk_id)
+    
+    @property
+    def chunk_count(self) -> int:
+        """Número total de chunks"""
+        return self._manager.chunk_count
+    
+    def clear(self) -> None:
+        """Limpiar el grafo completamente"""
+        self._manager.clear()
+        self._invalidate_hierarchical_analyzer()
+    
+    def get_most_important_chunks(self, top_k: int = 5) -> List[Tuple[str, float]]:
+        """Obtener chunks más importantes usando PageRank básico"""
+        if self._manager.chunk_count == 0:
+            return []
+        
+        try:
+            pagerank_scores = nx.pagerank(self._manager.graph)
+            sorted_chunks = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
+            return sorted_chunks[:top_k]
+        except:
+            return []
     
     # ========================================================================
     # CONSTRUCCIÓN JERÁRQUICA
@@ -244,18 +289,22 @@ class HierarchicalDocumentGraph(SimpleDocumentGraph):
     def _invalidate_hierarchical_analyzer(self) -> None:
         """Invalidar analyzer jerárquico cuando el grafo cambia"""
         self._hierarchical_analyzer = None
-        super()._invalidate_analyzer()  # También invalidar el analyzer base
     
     # ========================================================================
     # COMPATIBILIDAD CON SimpleDocumentGraph
     # ========================================================================
     
     def get_stats(self) -> Dict:
-        """Override para incluir información jerárquica si está disponible"""
+        """Obtener estadísticas del grafo"""
         if self._is_hierarchical:
             return self.get_hierarchical_stats()
         else:
-            return super().get_stats()
+            # Estadísticas básicas
+            return {
+                'nodes': self._manager.chunk_count,
+                'edges': self._manager.graph.number_of_edges(),
+                'connected_components': len(list(nx.weakly_connected_components(self._manager.graph))) if self._manager.chunk_count > 0 else 0
+            }
     
     @property
     def is_hierarchical(self) -> bool:

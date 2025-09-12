@@ -1,19 +1,16 @@
 try:
-    from .simple_graph import SimpleDocumentGraph, create_simple_rag_graph
     from .hierarchical_graph import HierarchicalDocumentGraph, create_hierarchical_rag_graph
     
     __all__ = [
-        'SimpleDocumentGraph',           # Interface original del grafo
-        'create_simple_rag_graph',       # Función para crear grafo simple (LEGACY)
-        'HierarchicalDocumentGraph',     # Nueva interface jerárquica
-        'create_hierarchical_rag_graph', # Función para crear grafo jerárquico (NUEVO)
+        'HierarchicalDocumentGraph',     # Interface jerárquica principal
+        'create_hierarchical_rag_graph', # Función para crear grafo jerárquico
     ]
     
-    # Aliases para compatibilidad
-    DocumentGraph = SimpleDocumentGraph
+    # Alias para compatibilidad
+    DocumentGraph = HierarchicalDocumentGraph
     
     def create_graph_from_chunks(chunks_data):
-        """Alias para compatibilidad - usa arquitectura jerárquica por defecto"""
+        """Crear grafo jerárquico desde chunks"""
         return create_hierarchical_rag_graph(chunks_data)
     
 except ImportError as e:
@@ -21,16 +18,9 @@ except ImportError as e:
     
     __all__ = []
     
-    class SimpleDocumentGraph:
-        def __init__(self):
-            raise ImportError("NetworkX not available. Install with: pip install networkx")
-    
     class HierarchicalDocumentGraph:
         def __init__(self):
             raise ImportError("NetworkX not available. Install with: pip install networkx")
-    
-    def create_simple_rag_graph(chunks_data):
-        raise ImportError("NetworkX not available. Install with: pip install networkx")
     
     def create_hierarchical_rag_graph(chunks_data):
         raise ImportError("NetworkX not available. Install with: pip install networkx")

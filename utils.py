@@ -106,30 +106,9 @@ def compare_graphs():
             print(f"   ❌ Error leyendo grafo: {e}")
 
 def migrate_simple_to_hierarchical():
-    """Migrar grafo simple a jerárquico"""
-    from migrate_graph import migrate_simple_to_hierarchical
-    
-    print("\n🔄 MIGRACIÓN A ARQUITECTURA JERÁRQUICA")
-    print("="*40)
-    
-    # Verificar si ya existe grafo jerárquico
-    from src.config import STORAGE_CONFIG
-    hierarchical_path = STORAGE_CONFIG["graph_path"].replace(".pkl", "_hierarchical.pkl")
-    
-    if os.path.exists(hierarchical_path):
-        response = input(f"⚠️ Ya existe grafo jerárquico. ¿Sobreescribir? (y/N): ").strip().lower()
-        if response != 'y':
-            print("❌ Migración cancelada")
-            return
-    
-    try:
-        result = migrate_simple_to_hierarchical()
-        if result:
-            print("✅ Migración completada exitosamente!")
-        else:
-            print("❌ Migración falló")
-    except Exception as e:
-        print(f"❌ Error en migración: {e}")
+    """Migración eliminada - usar directamente indexación jerárquica"""
+    print("⚠️ Migración eliminada: usar 'python3 index.py' directamente")
+    return False
 
 def clean_obsolete_graphs():
     """Limpiar grafos obsoletos"""

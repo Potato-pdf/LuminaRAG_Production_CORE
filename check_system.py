@@ -127,11 +127,9 @@ def check_file_structure() -> Tuple[bool, str]:
         'index.py',
         'query.py',
         'utils.py',
-        'migrate_graph.py',
         'requirements.txt',
         'src/config/settings.py',
-        'src/document_graph/hierarchical_graph.py',
-        'src/document_graph/simple_graph.py'
+        'src/document_graph/hierarchical_graph.py'
     ]
     
     missing_files = []
@@ -278,7 +276,7 @@ def print_summary(results: List[Tuple[str, bool, str]]):
         print("   1. Verificar archivo .env con variables requeridas")
         print("   2. Iniciar servicios Docker (Milvus, Ollama)")
         print("   3. Instalar dependencias: pip install -r requirements.txt")
-        print("   4. Ejecutar migración: python3 migrate_graph.py")
+        print("   4. Ejecutar indexación: python3 index.py")
 
 if __name__ == "__main__":
     try:
