@@ -1,5 +1,5 @@
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, list_collections
-from db_milvus.connection import connect_milvus 
+from src.db_milvus.connection import connect_milvus 
 
 def create_schema_comercial():
     connection = connect_milvus()
