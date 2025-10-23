@@ -13,6 +13,7 @@ Sistema de indexación principal que usa arquitectura jerárquica:
 import os
 import sys
 import pickle
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 
 # Cargar configuración
@@ -21,10 +22,12 @@ load_dotenv()
 def main():
     """Indexación principal con arquitectura jerárquica"""
     
-    from pymilvus import connections, Collection, utility, DataType, CollectionSchema, FieldSchema
+    from pymilvus import connections, utility
     from llama_index.core import Document, Settings
     from llama_index.core.node_parser import SentenceWindowNodeParser
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    from llama_index.vector_stores.milvus import MilvusVectorStore
+    from llama_index.core import VectorStoreIndex
     from src.parse_docs import parse_documents
     from src.document_graph import create_hierarchical_rag_graph  # NUEVA ARQUITECTURA
     from src.config import CHUNKING_CONFIG, EMBEDDING_CONFIG, MILVUS_CONFIG, PATH_CONFIG, STORAGE_CONFIG, API_CONFIG
@@ -32,22 +35,11 @@ def main():
     print("🌳 INDEXADOR JERÁRQUICO LUMINA")
     print("="*50)
     
-    # 1. Conectar a Milvus
-    print("🔌 Conectando a Milvus...")
-    connections.connect(
-        alias="default",
-        host=MILVUS_CONFIG["host"],
-        port=MILVUS_CONFIG["port"],
-        user=MILVUS_CONFIG["user"],
-        password=MILVUS_CONFIG["password"]
-    )
-    print("✅ Conectado a Milvus")
-    
-    # 2. Configurar colección jerárquica
+    # 1. Configurar colección jerárquica con LlamaIndex
     collection_name = "lumina_hierarchical"
-    setup_hierarchical_collection(collection_name)
+    vector_store = setup_hierarchical_vector_store(collection_name)
     
-    # 3. Procesar documentos
+    # 2. Procesar documentos
     print("📄 Procesando documentos...")
     api_key = API_CONFIG["llama_cloud_api_key"]
     documents = parse_documents(api_key=api_key)
@@ -81,63 +73,57 @@ def main():
     # Guardar grafo jerárquico
     save_hierarchical_graph(hierarchical_graph)
     
-    # 7. Generar embeddings
+    # 7. Generar embeddings paralelizados
     print("🔢 Generando embeddings...")
-    embeddings = generate_embeddings(nodes, embedding_model)
+    embeddings = generate_embeddings_parallel(nodes, embedding_model)
     
-    # 8. Insertar datos jerárquicos en Milvus
-    print("💾 Insertando datos jerárquicos...")
-    success = insert_hierarchical_data(collection_name, nodes, embeddings, hierarchical_graph)
+    # 8. Crear documentos con metadatos jerárquicos
+    print("� Preparando documentos jerárquicos...")
+    hierarchical_documents = prepare_hierarchical_documents(nodes, embeddings, hierarchical_graph)
     
-    if not success:
-        print("❌ Error en inserción de datos jerárquicos")
-        return False
+    # 9. Indexar con LlamaIndex (inserta automáticamente en Milvus)
+    print("💾 Indexando documentos jerárquicos...")
+    index = VectorStoreIndex.from_documents(
+        hierarchical_documents,
+        vector_store=vector_store,
+        embed_model=embedding_model
+    )
     
-    # 9. Crear sistema FAISS-GPU optimizado
+    # 10. Crear sistema FAISS-GPU optimizado
     print("🚀 Creando sistema FAISS-GPU optimizado...")
     faiss_success = create_faiss_system(hierarchical_graph)
     
-    # 10. Resumen final
+    # 11. Resumen final
     print_final_summary(collection_name, hierarchical_graph, faiss_success)
     
     return True
 
-def setup_hierarchical_collection(collection_name: str):
-    """Configurar colección Milvus con campos jerárquicos"""
-    from pymilvus import Collection, utility, DataType, CollectionSchema, FieldSchema
-    from src.config import EMBEDDING_CONFIG
+def setup_hierarchical_vector_store(collection_name: str):
+    """Configurar MilvusVectorStore con campos jerárquicos"""
+    from llama_index.vector_stores.milvus import MilvusVectorStore
+    from pymilvus import utility
+    from src.config import EMBEDDING_CONFIG, MILVUS_CONFIG
     
     # Eliminar colección si existe
     if utility.has_collection(collection_name):
         utility.drop_collection(collection_name)
         print(f"🗑️ Colección '{collection_name}' eliminada")
     
-    # Definir campos jerárquicos
-    fields = [
-        FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=500, is_primary=True),
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_CONFIG["embedding_dim"]),
-        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-        FieldSchema(name="metadata", dtype=DataType.JSON),
-        # Campos jerárquicos especializados
-        FieldSchema(name="document_name", dtype=DataType.VARCHAR, max_length=500),
-        FieldSchema(name="is_root", dtype=DataType.BOOL),
-        FieldSchema(name="tree_level", dtype=DataType.INT64),
-        FieldSchema(name="parent_chunk", dtype=DataType.VARCHAR, max_length=500),
-        FieldSchema(name="hierarchical_importance", dtype=DataType.FLOAT)
-    ]
+    # Crear vector store con configuración jerárquica
+    vector_store = MilvusVectorStore(
+        collection_name=collection_name,
+        dim=EMBEDDING_CONFIG["embedding_dim"],
+        host=MILVUS_CONFIG["host"],
+        port=MILVUS_CONFIG["port"],
+        user=MILVUS_CONFIG["user"],
+        password=MILVUS_CONFIG["password"],
+        # Campos adicionales para jerarquía
+        text_key="text",
+        metadata_key="metadata"
+    )
     
-    schema = CollectionSchema(fields=fields, description="Colección jerárquica con árboles por documento")
-    collection = Collection(name=collection_name, schema=schema)
-    
-    # Crear índices
-    index_params = {
-        "metric_type": "COSINE",
-        "index_type": "IVF_FLAT",
-        "params": {"nlist": 1024}
-    }
-    collection.create_index(field_name="vector", index_params=index_params)
-    
-    print(f"✅ Colección jerárquica '{collection_name}' creada")
+    print(f"✅ Vector store jerárquico '{collection_name}' configurado")
+    return vector_store
 
 def prepare_chunks_data(nodes) -> list:
     """Preparar datos de chunks para el grafo jerárquico"""
@@ -168,20 +154,22 @@ def save_hierarchical_graph(hierarchical_graph):
     
     print(f"💾 Grafo jerárquico guardado: {hierarchical_path}")
 
-def generate_embeddings(nodes, embedding_model):
-    """Generar embeddings para los chunks"""
-    embeddings = []
-    for node in nodes:
-        embedding = embedding_model.get_text_embedding(node.get_content())
-        embeddings.append(embedding)
+def generate_embeddings_parallel(nodes, embedding_model, max_workers=4):
+    """Generar embeddings paralelizados para los chunks"""
+    def get_embedding(node):
+        return embedding_model.get_text_embedding(node.get_content())
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        embeddings = list(executor.map(get_embedding, nodes))
+    
+    print(f"✅ Generados {len(embeddings)} embeddings paralelizados")
     return embeddings
 
-def insert_hierarchical_data(collection_name: str, nodes, embeddings, hierarchical_graph):
-    """Insertar datos con información jerárquica en Milvus"""
-    from pymilvus import Collection
+def prepare_hierarchical_documents(nodes, embeddings, hierarchical_graph):
+    """Preparar documentos LlamaIndex con metadatos jerárquicos"""
+    from llama_index.core import Document
     
-    collection = Collection(collection_name)
-    entities = []
+    documents = []
     document_roots = hierarchical_graph.get_document_roots()
     
     for i, (node, embedding) in enumerate(zip(nodes, embeddings)):
@@ -197,56 +185,28 @@ def insert_hierarchical_data(collection_name: str, nodes, embeddings, hierarchic
             node.node_id, hierarchical_graph, is_root
         )
         
-        entity = {
-            "id": node.node_id,
-            "vector": embedding,
-            "text": node.get_content()[:65000],
-            "metadata": {
-                "file_name": node.metadata.get('file_name', 'unknown'),
-                "chunk_index": i,
-                "node_id": node.node_id,
-                "page_label": node.metadata.get('page_label', ''),
-                "document_name": doc_name or 'unknown',
-                "is_document_root": is_root,
-                "tree_level": tree_info['level'],
-                "parent_chunk": tree_info['parent'],
-                "hierarchical_importance": hierarchical_importance
-            },
-            # Campos directos para búsquedas eficientes
+        # Crear documento con metadatos jerárquicos
+        metadata = {
+            "file_name": node.metadata.get('file_name', 'unknown'),
+            "chunk_index": i,
+            "node_id": node.node_id,
+            "page_label": node.metadata.get('page_label', ''),
             "document_name": doc_name or 'unknown',
-            "is_root": is_root,
+            "is_document_root": is_root,
             "tree_level": tree_info['level'],
-            "parent_chunk": tree_info['parent'] or '',
+            "parent_chunk": tree_info['parent'],
             "hierarchical_importance": hierarchical_importance
         }
-        entities.append(entity)
+        
+        document = Document(
+            text=node.get_content(),
+            metadata=metadata,
+            id_=node.node_id
+        )
+        documents.append(document)
     
-    # Insertar por lotes
-    print("💾 Insertando en Milvus...")
-    try:
-        batch_size = 50
-        total_inserted = 0
-        
-        for i in range(0, len(entities), batch_size):
-            batch_entities = entities[i:i+batch_size]
-            result = collection.insert(batch_entities)
-            total_inserted += len(batch_entities)
-            print(f"   Lote {i//batch_size + 1}: {len(batch_entities)} registros insertados")
-        
-        collection.flush()
-        print(f"✅ Flush completado")
-        
-        collection.load()
-        final_count = collection.num_entities
-        
-        print(f"✅ {final_count} documentos verificados en Milvus")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error en inserción: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    print(f"✅ Preparados {len(documents)} documentos jerárquicos")
+    return documents
 
 def calculate_tree_info(chunk_id: str, hierarchical_graph) -> dict:
     """Calcular información del árbol para un chunk"""
