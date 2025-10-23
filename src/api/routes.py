@@ -1,10 +1,3 @@
-"""
-🛣️ RUTAS DE LA API REST
-======================
-
-Define los endpoints HTTP para el sistema RAG.
-"""
-
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 import logging

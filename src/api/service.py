@@ -1,11 +1,3 @@
-"""
-🔧 SERVICIO DE CONSULTAS PARA LA API
-====================================
-
-Capa de servicio que encapsula la lógica del sistema RAG
-sin modificar la implementación existente.
-"""
-
 import time
 import logging
 from typing import Dict, Any, List, Optional
@@ -55,7 +47,7 @@ class QueryService:
         logger.info("🎉 Sistema RAG inicializado correctamente")
     
     def process_query(self, query: str, k: int = 5, k_roots: int = 5, 
-                     include_context: bool = True) -> QueryResponse:
+                    include_context: bool = True) -> QueryResponse:
         """
         Procesar una consulta y retornar respuesta estructurada.
         
