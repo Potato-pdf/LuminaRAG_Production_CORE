@@ -1,10 +1,3 @@
-"""
-📋 MODELOS DE DATOS PARA LA API
-================================
-
-Modelos Pydantic para request/response de la API REST.
-"""
-
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -44,7 +37,7 @@ class QueryResponse(BaseModel):
     chunks: List[ChunkInfo]
     documents_used: List[str]
     processing_time: float
-    timestamp: str
+    timestamap: str
     
     class Config:
         json_schema_extra = {
