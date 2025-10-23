@@ -76,6 +76,14 @@ STORAGE_CONFIG = {
 
 # Configuración de fuentes de documentos (para arquitectura modular)
 DOCUMENT_SOURCE_CONFIG = {
-    "type": "local",  # "local", "api", "database", etc.
+    "type": os.getenv("DOCUMENT_SOURCE_TYPE", "local"),  # "local", "api", "database", etc.
     "parser": "llama_parse"  # "llama_parse", "simple", etc.
+}
+
+# Configuración de S3 (para fuente API)
+S3_CONFIG = {
+    "bucket_name": os.getenv("S3_BUCKET_NAME"),
+    "region": os.getenv("AWS_REGION", "us-east-1"),
+    "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+    "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
 }
