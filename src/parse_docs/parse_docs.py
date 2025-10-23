@@ -9,9 +9,9 @@ def parse_documents(directory_path: str = None, api_key: Optional[str] = None) -
     if DOCUMENT_SOURCE_CONFIG["type"] == "local":
         from .sources.local_source import LocalFileSource
         source = LocalFileSource()  # Sin parámetros - usa configuración
-    # elif DOCUMENT_SOURCE_CONFIG["type"] == "api":
-        #from .sources.api_source import APISource  # ← FUTURO
-        #source = APISource()
+    elif DOCUMENT_SOURCE_CONFIG["type"] == "api":
+        from .sources.api_source import APISource
+        source = APISource()
 
     # 2. Obtener parser configurada
     if DOCUMENT_SOURCE_CONFIG["parser"] == "llama_parse":
@@ -27,5 +27,9 @@ def parse_documents(directory_path: str = None, api_key: Optional[str] = None) -
     print(f"📄 Procesando {len(file_paths)} archivos...")
     documents = parser.parse_files(file_paths)
     print(f"✅ Se generaron {len(documents)} documentos.")
+    
+    # Marcar archivos como procesados (solo para API source)
+    if hasattr(source, 'mark_files_processed'):
+        source.mark_files_processed(file_paths)
     
     return documents
