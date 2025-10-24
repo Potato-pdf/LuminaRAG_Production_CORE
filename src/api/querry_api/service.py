@@ -5,7 +5,7 @@ from datetime import datetime
 
 from src.FAISS.faiss_integration import load_faiss_system
 from src.model_ai.choice_model_llama import connect_ollama
-from src.api.models import QueryResponse, ChunkInfo, SystemStats, DocumentInfo, HealthResponse
+from api.querry_api.models import QueryResponse, ChunkInfo, SystemStats, DocumentInfo, HealthResponse
 
 logger = logging.getLogger(__name__)
 

@@ -20,8 +20,8 @@ from dotenv import load_dotenv
 import uvicorn
 import logging
 
-from src.api.routes import query_router, system_router
-from src.api.service import QueryService
+from api.querry_api.routes import query_router, system_router
+from api.querry_api.service import QueryService
 
 # Cargar configuración
 load_dotenv()

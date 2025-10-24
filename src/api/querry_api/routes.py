@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 import logging
 
-from src.api.models import (
+from api.querry_api.models import (
     QueryRequest, 
     QueryResponse, 
     SystemStats, 
@@ -10,7 +10,7 @@ from src.api.models import (
     HealthResponse,
     ErrorResponse
 )
-from src.api.service import QueryService
+from api.querry_api.service import QueryService
 
 logger = logging.getLogger(__name__)
 
