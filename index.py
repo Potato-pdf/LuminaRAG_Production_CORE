@@ -98,28 +98,21 @@ def main():
     return True
 
 def setup_hierarchical_vector_store(collection_name: str):
-    """Configurar MilvusVectorStore con campos jerárquicos"""
-    from llama_index.vector_stores.milvus import MilvusVectorStore
-    from src.config import EMBEDDING_CONFIG, MILVUS_CONFIG
-    
-    # Crear URI para conexión a Milvus externo
-    # Formato: http://user:password@host:port
-    milvus_uri = f"http://{MILVUS_CONFIG['user']}:{MILVUS_CONFIG['password']}@{MILVUS_CONFIG['host']}:{MILVUS_CONFIG['port']}"
-    
-    print(f"🔗 Conectando a Milvus: {MILVUS_CONFIG['host']}:{MILVUS_CONFIG['port']}")
-    
-    # Crear vector store con URI (evita fallback a milvus_lite)
-    vector_store = MilvusVectorStore(
-        uri=milvus_uri,  # Usar URI en lugar de host/port separados
-        collection_name=collection_name,
-        dim=EMBEDDING_CONFIG["embedding_dim"],
-        # Campos adicionales para jerarquía
-        text_key="text",
-        metadata_key="metadata",
-        overwrite=True  # Recrear colección si existe
-    )
-    
-    print(f"✅ Vector store jerárquico '{collection_name}' configurado")
+    """Configurar FAISS VectorStore para almacenamiento persistente"""
+    from llama_index.vector_stores.faiss import FaissVectorStore
+    from src.config import EMBEDDING_CONFIG
+    import faiss
+
+    print("🔄 Configurando FAISS VectorStore...")
+
+    # Crear índice FAISS optimizado
+    d = EMBEDDING_CONFIG["embedding_dim"]  # 768
+    faiss_index = faiss.IndexFlatIP(d)  # Inner product para similitud coseno
+
+    # Crear vector store FAISS
+    vector_store = FaissVectorStore(faiss_index=faiss_index)
+
+    print(f"✅ FAISS VectorStore '{collection_name}' configurado (dimensión: {d})")
     return vector_store
 
 def prepare_chunks_data(nodes) -> list:
