@@ -13,6 +13,12 @@ def create_schema_comercial():
     ]
     schema = CollectionSchema(fields, description="Document embeddings comerciales")
 
+    collection_name = "Empresa1"
+    collection_name = "Empresa2"
+
+    collection.create_partition("public")
+    collection.create_partition("private")
+
 
     if collection_name not in list_collections():
         Collection(name=collection_name, schema=schema)
