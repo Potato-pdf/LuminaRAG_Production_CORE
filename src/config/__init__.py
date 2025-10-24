@@ -12,7 +12,8 @@ from .settings import (
     PATH_CONFIG,
     STORAGE_CONFIG,
     API_CONFIG,
-    DOCUMENT_SOURCE_CONFIG
+    DOCUMENT_SOURCE_CONFIG,
+    S3_CONFIG
 )
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     'PATH_CONFIG',
     'STORAGE_CONFIG',
     'API_CONFIG',
-    'DOCUMENT_SOURCE_CONFIG'
+    'DOCUMENT_SOURCE_CONFIG',
+    'S3_CONFIG'
 ]

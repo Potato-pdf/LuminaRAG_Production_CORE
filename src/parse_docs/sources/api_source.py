@@ -31,7 +31,7 @@ class APISource:
         except (NoCredentialsError, PartialCredentialsError) as e:
             raise Exception(f"Error de credenciales S3: {e}")
 
-    def get_file_paths(self) -> List[str]:
+    def get_file_paths(self) -> List[Path]:
         """Obtener rutas locales de archivos de S3 que no han sido procesados"""
         try:
             # Obtener archivos procesados previamente
@@ -70,12 +70,12 @@ class APISource:
             print(f"❌ Error obteniendo archivos de S3: {e}")
             return []
 
-    def _download_file(self, file_key: str, file_name: str) -> str:
+    def _download_file(self, file_key: str, file_name: str) -> Path:
         """Descargar archivo de S3 a directorio temporal"""
         try:
             local_path = os.path.join(self.temp_dir, file_name)
             self.s3_client.download_file(self.bucket_name, file_key, local_path)
-            return local_path
+            return Path(local_path)
         except Exception as e:
             print(f"❌ Error descargando {file_key}: {e}")
             return None
