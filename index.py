@@ -138,14 +138,23 @@ def prepare_chunks_data(nodes) -> list:
     return chunks_data
 
 def save_hierarchical_graph(hierarchical_graph):
-    """Guardar grafo jerárquico"""
+    """Guardar grafo jerárquico con backup automático"""
     from src.config import STORAGE_CONFIG
-    
+    import shutil
+    from datetime import datetime
+
     hierarchical_path = STORAGE_CONFIG["graph_path"].replace(".pkl", "_hierarchical.pkl")
-    
+
+    # Crear backup si existe archivo anterior
+    if os.path.exists(hierarchical_path):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = hierarchical_path.replace(".pkl", f"_backup_{timestamp}.pkl")
+        shutil.copy2(hierarchical_path, backup_path)
+        print(f"💾 Backup creado: {os.path.basename(backup_path)}")
+
     with open(hierarchical_path, 'wb') as f:
         pickle.dump(hierarchical_graph, f)
-    
+
     print(f"💾 Grafo jerárquico guardado: {hierarchical_path}")
 
 def generate_embeddings_parallel(nodes, embedding_model, max_workers=4):
