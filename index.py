@@ -22,7 +22,6 @@ load_dotenv()
 def main():
     """Indexación principal con arquitectura jerárquica"""
     
-    from pymilvus import connections, utility
     from llama_index.core import Document, Settings
     from llama_index.core.node_parser import SentenceWindowNodeParser
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -101,15 +100,10 @@ def main():
 def setup_hierarchical_vector_store(collection_name: str):
     """Configurar MilvusVectorStore con campos jerárquicos"""
     from llama_index.vector_stores.milvus import MilvusVectorStore
-    from pymilvus import utility
     from src.config import EMBEDDING_CONFIG, MILVUS_CONFIG
     
-    # Eliminar colección si existe
-    if utility.has_collection(collection_name):
-        utility.drop_collection(collection_name)
-        print(f"🗑️ Colección '{collection_name}' eliminada")
-    
     # Crear vector store con configuración jerárquica
+    # LlamaIndex maneja la conexión y creación de colección automáticamente
     vector_store = MilvusVectorStore(
         collection_name=collection_name,
         dim=EMBEDDING_CONFIG["embedding_dim"],
