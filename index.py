@@ -102,18 +102,21 @@ def setup_hierarchical_vector_store(collection_name: str):
     from llama_index.vector_stores.milvus import MilvusVectorStore
     from src.config import EMBEDDING_CONFIG, MILVUS_CONFIG
     
-    # Crear vector store con configuración jerárquica
-    # LlamaIndex maneja la conexión y creación de colección automáticamente
+    # Crear URI para conexión a Milvus externo
+    # Formato: http://user:password@host:port
+    milvus_uri = f"http://{MILVUS_CONFIG['user']}:{MILVUS_CONFIG['password']}@{MILVUS_CONFIG['host']}:{MILVUS_CONFIG['port']}"
+    
+    print(f"🔗 Conectando a Milvus: {MILVUS_CONFIG['host']}:{MILVUS_CONFIG['port']}")
+    
+    # Crear vector store con URI (evita fallback a milvus_lite)
     vector_store = MilvusVectorStore(
+        uri=milvus_uri,  # Usar URI en lugar de host/port separados
         collection_name=collection_name,
         dim=EMBEDDING_CONFIG["embedding_dim"],
-        host=MILVUS_CONFIG["host"],
-        port=MILVUS_CONFIG["port"],
-        user=MILVUS_CONFIG["user"],
-        password=MILVUS_CONFIG["password"],
         # Campos adicionales para jerarquía
         text_key="text",
-        metadata_key="metadata"
+        metadata_key="metadata",
+        overwrite=True  # Recrear colección si existe
     )
     
     print(f"✅ Vector store jerárquico '{collection_name}' configurado")
