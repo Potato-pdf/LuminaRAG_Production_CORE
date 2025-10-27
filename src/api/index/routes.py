@@ -2,30 +2,70 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 import logging
 
-from api.querry_api.models import (
-    QueryRequest, 
-    QueryResponse, 
-    SystemStats, 
-    DocumentInfo, 
-    HealthResponse,
-    ErrorResponse
-)
-from api.querry_api.service import QueryService
+from .models import DocumentToIndex, IndexResponse
+from .service import IndexService
 
 logger = logging.getLogger(__name__)
 
-# Router para consultas
+# Router para indexación
+index_router = APIRouter()
+
+# Router para consultas (si se necesita)
 query_router = APIRouter()
 
-# Router para endpoints del sistema
-system_router = APIRouter()
-
-
 # Variable global para el servicio (inyectada por dependency)
-def get_service():
+def get_index_service():
     """Placeholder para dependency injection"""
     # Esta función será sobreescrita por el dependency del servidor
     pass
+
+
+@index_router.post(
+    "/index",
+    response_model=IndexResponse,
+    responses={
+        400: {"model": dict},
+        500: {"model": dict}
+    },
+    summary="Indexar documentos desde S3",
+    description="Indexa documentos desde S3 organizados por empresa/privacidad y los guarda en colecciones FAISS específicas"
+)
+async def index_documents_endpoint(request: DocumentToIndex):
+    """
+    Indexar documentos para una empresa específica.
+
+    Descarga documentos desde S3 según la estructura empresa/privacidad/,
+    los procesa y los indexa en la colección correspondiente.
+    """
+    try:
+        logger.info(f"Indexación solicitada para empresa {request.empresa}, privado: {request.private}")
+
+        # Importar servicio desde el módulo principal
+        from api_server import index_service
+
+        if index_service is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Servicio de indexación no disponible."
+            )
+
+        # Procesar indexación
+        response = index_service.index_documents(
+            empresa=request.empresa,
+            private=request.private
+        )
+
+        logger.info(f"Indexación completada: {response.documents_processed} documentos, {response.chunks_created} chunks")
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en indexación: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en indexación: {str(e)}"
+        )
 
 
 @query_router.post(

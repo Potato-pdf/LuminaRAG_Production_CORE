@@ -2,49 +2,211 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-from src.FAISS.faiss_integration import load_faiss_system
-from src.model_ai.choice_model_llama import connect_ollama
-from api.querry_api.models import QueryResponse, ChunkInfo, SystemStats, DocumentInfo, HealthResponse
+from src.parse_docs import parse_documents_with_metadata
+from src.config import API_CONFIG, CHUNKING_CONFIG, EMBEDDING_CONFIG
+from llama_index.core.node_parser import SentenceWindowNodeParser
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from .models import IndexResponse
 
 logger = logging.getLogger(__name__)
 
+load_dotenv()
 
-class QueryService:
+class IndexService:
     """
-    Servicio que encapsula el sistema de consultas RAG.
-    Reutiliza toda la lógica existente sin modificaciones.
+    Servicio para indexar documentos desde S3 en colecciones específicas por empresa.
     """
-    
+
     def __init__(self):
-        self.faiss_system = None
-        self.llm = None
+        self.embedding_model = None
+        self.node_parser = None
         self._initialized = False
-    
+
     def initialize(self):
-        """Inicializar el sistema RAG (carga FAISS y conecta LLM)"""
+        """Inicializar componentes necesarios para indexación"""
         if self._initialized:
-            logger.warning("Sistema ya inicializado")
             return
-        
-        logger.info("Inicializando sistema RAG...")
-        
-        # 1. Cargar sistema FAISS
-        logger.info("Cargando sistema FAISS...")
-        self.faiss_system = load_faiss_system()
-        if not self.faiss_system:
-            raise RuntimeError("No se pudo cargar el sistema FAISS")
-        logger.info("✅ Sistema FAISS cargado")
-        
-        # 2. Conectar con Ollama
-        logger.info("Conectando con Ollama...")
-        self.llm = connect_ollama()
-        if not self.llm:
-            raise RuntimeError("No se pudo conectar con Ollama")
-        logger.info("✅ Ollama conectado")
-        
+
+        logger.info("Inicializando servicio de indexación...")
+
+        # Configurar embedding model
+        self.embedding_model = HuggingFaceEmbedding(
+            model_name=EMBEDDING_CONFIG["model_name"],
+            max_length=512,
+            device="cpu"
+        )
+
+        # Configurar node parser
+        self.node_parser = SentenceWindowNodeParser(
+            window_size=CHUNKING_CONFIG["chunk_window_size"],
+            window_metadata_key="window",
+            original_text_metadata_key="original_text"
+        )
+
         self._initialized = True
-        logger.info("🎉 Sistema RAG inicializado correctamente")
+        logger.info("✅ Servicio de indexación inicializado")
+
+    def index_documents(self, empresa: str, private: bool) -> IndexResponse:
+        """
+        Indexar documentos de una empresa específica desde S3.
+
+        Args:
+            empresa: Nombre de la empresa
+            private: Si indexar documentos privados o públicos
+
+        Returns:
+            IndexResponse con resultados de la indexación
+        """
+        if not self._initialized:
+            self.initialize()
+
+        start_time = time.time()
+        logger.info(f"🏗️ Iniciando indexación para {empresa} ({'privado' if private else 'público'})")
+
+        try:
+            # 1. Procesar documentos con metadata desde S3
+            api_key = API_CONFIG["llama_cloud_api_key"]
+            documents, documents_metadata = parse_documents_with_metadata(api_key=api_key)
+
+            if not documents:
+                return IndexResponse(
+                    success=False,
+                    message=f"No se encontraron documentos para {empresa}",
+                    documents_processed=0,
+                    chunks_created=0,
+                    milvus_collection=f"{empresa}_{'private' if private else 'public'}"
+                )
+
+            # 2. Filtrar documentos por empresa y privacidad
+            filtered_documents = []
+            for doc, metadata in zip(documents, documents_metadata or []):
+                if (hasattr(metadata, 'empresa') and metadata.empresa == empresa and
+                    hasattr(metadata, 'private') and metadata.private == private):
+                    # Agregar metadata al documento de LlamaIndex
+                    doc.metadata.update({
+                        'empresa': metadata.empresa,
+                        'private': metadata.private,
+                        's3_key': metadata.s3_key,
+                        'file_name': metadata.file_name
+                    })
+                    filtered_documents.append(doc)
+
+            if not filtered_documents:
+                return IndexResponse(
+                    success=False,
+                    message=f"No se encontraron documentos {'privados' if private else 'públicos'} para {empresa}",
+                    documents_processed=0,
+                    chunks_created=0,
+                    milvus_collection=f"{empresa}_{'private' if private else 'public'}"
+                )
+
+            logger.info(f"📄 Procesando {len(filtered_documents)} documentos filtrados")
+
+            # 3. Crear chunks
+            nodes = self.node_parser.get_nodes_from_documents(filtered_documents)
+            logger.info(f"✅ {len(nodes)} chunks creados")
+
+            # 4. Generar embeddings
+            embeddings = []
+            for node in nodes:
+                embedding = self.embedding_model.get_text_embedding(node.get_content())
+                embeddings.append(embedding)
+
+            # 5. Indexar en colección específica
+            collection_name = self._index_to_faiss_collection(
+                empresa, private, nodes, embeddings
+            )
+
+            processing_time = time.time() - start_time
+
+            return IndexResponse(
+                success=True,
+                message=f"Indexación completada exitosamente para {empresa}",
+                documents_processed=len(filtered_documents),
+                chunks_created=len(nodes),
+                milvus_collection=collection_name
+            )
+
+        except Exception as e:
+            logger.error(f"Error en indexación: {e}", exc_info=True)
+            return IndexResponse(
+                success=False,
+                message=f"Error en indexación: {str(e)}",
+                documents_processed=0,
+                chunks_created=0,
+                milvus_collection=f"{empresa}_{'private' if private else 'public'}"
+            )
+
+    def _index_to_faiss_collection(self, empresa: str, private: bool,
+                                  nodes: List, embeddings: List) -> str:
+        """
+        Indexar chunks en una colección FAISS específica para empresa_privacidad
+        """
+        import faiss
+        import json
+        from src.config import STORAGE_CONFIG
+
+        privacidad_str = "private" if private else "public"
+        collection_name = f"{empresa}_{privacidad_str}"
+
+        # Crear directorio si no existe
+        faiss_dir = Path(STORAGE_CONFIG["base_dir"]) / "faiss_collections"
+        faiss_dir.mkdir(parents=True, exist_ok=True)
+
+        faiss_path = faiss_dir / f"{collection_name}.faiss"
+        metadata_path = faiss_dir / f"{collection_name}_metadata.json"
+
+        # Preparar datos para FAISS
+        dimension = len(embeddings[0]) if embeddings else 768
+        faiss_index = faiss.IndexFlatIP(dimension)
+
+        # Convertir embeddings a numpy array
+        import numpy as np
+        embeddings_array = np.array(embeddings, dtype=np.float32)
+        faiss_index.add(embeddings_array)
+
+        # Guardar índice FAISS
+        faiss.write_index(faiss_index, str(faiss_path))
+
+        # Preparar y guardar metadata
+        metadata = {
+            "collection_name": collection_name,
+            "empresa": empresa,
+            "private": private,
+            "document_count": len(set(node.metadata.get('file_name', 'unknown') for node in nodes)),
+            "chunk_count": len(nodes),
+            "created_at": datetime.now().isoformat(),
+            "documents": []
+        }
+
+        # Agregar información de documentos
+        doc_info = {}
+        for i, node in enumerate(nodes):
+            file_name = node.metadata.get('file_name', 'unknown')
+            if file_name not in doc_info:
+                doc_info[file_name] = {
+                    "file_name": file_name,
+                    "empresa": empresa,
+                    "private": private,
+                    "chunks": []
+                }
+            doc_info[file_name]["chunks"].append({
+                "id": i,
+                "content_preview": node.get_content()[:200] + "..." if len(node.get_content()) > 200 else node.get_content()
+            })
+
+        metadata["documents"] = list(doc_info.values())
+
+        # Guardar metadata
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"💾 Colección {collection_name} guardada: {faiss_path}")
+        return collection_name
     
     def process_query(self, query: str, k: int = 5, k_roots: int = 5, 
                     include_context: bool = True) -> QueryResponse:
