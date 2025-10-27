@@ -3,13 +3,16 @@ services:
   lumina_rag:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: lumina_rag
     volumes:
       - .:/app
+    ports:
+      - "8000:8000"
     environment:
       - PYTHONPATH=./src
-    command: python3 .py
+    # Comando por defecto del Dockerfile (desarrollo con --reload)
+    # Para producción, cambia el comando en el Dockerfile descomentando la sección de PROD
 networks:
   app_name:
     name: ${NETWORK_NAME}
