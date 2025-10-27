@@ -22,6 +22,8 @@ import logging
 
 from api.querry_api.routes import query_router, system_router
 from api.querry_api.service import QueryService
+from api.index.routes import index_router
+from api.index.service import IndexService
 
 # Cargar configuración
 load_dotenv()
@@ -35,22 +37,28 @@ logger = logging.getLogger(__name__)
 
 # Variable global para el servicio
 query_service = None
+index_service = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestión del ciclo de vida de la aplicación"""
-    global query_service
+    global query_service, index_service
     
     # Startup
     logger.info("🚀 Iniciando API REST Lumina RAG...")
     try:
         query_service = QueryService()
         query_service.initialize()
-        logger.info("✅ Sistema RAG inicializado correctamente")
+        logger.info("✅ Sistema RAG de consultas inicializado correctamente")
+
+        index_service = IndexService()
+        index_service.initialize()
+        logger.info("✅ Sistema de indexación inicializado correctamente")
+
         yield
     except Exception as e:
-        logger.error(f"❌ Error inicializando sistema: {e}")
+        logger.error(f"❌ Error inicializando sistemas: {e}")
         raise
     finally:
         # Shutdown
@@ -82,12 +90,26 @@ def get_query_service() -> QueryService:
     return query_service
 
 
+def get_index_service() -> IndexService:
+    """Dependency para obtener el servicio de indexación"""
+    if index_service is None:
+        raise HTTPException(status_code=503, detail="Servicio de indexación no inicializado")
+    return index_service
+
+
 # Registrar routers
 app.include_router(
     query_router,
     prefix="/api/v1",
     tags=["Consultas"],
     dependencies=[Depends(get_query_service)]
+)
+
+app.include_router(
+    index_router,
+    prefix="/api/v1",
+    tags=["Indexación"],
+    dependencies=[Depends(get_index_service)]
 )
 
 app.include_router(
@@ -107,7 +129,14 @@ async def root():
         "status": "running",
         "docs": "/docs",
         "endpoints": {
+            # Indexación
+            "index": "POST /api/v1/index",
+            # Consultas generales
             "query": "POST /api/v1/query",
+            # Consultas por empresa
+            "query_public": "POST /api/v1/query/public/{empresa}",
+            "query_private": "POST /api/v1/query/private/{empresa}",
+            # Sistema
             "health": "GET /api/v1/health",
             "stats": "GET /api/v1/stats",
             "documents": "GET /api/v1/documents"
