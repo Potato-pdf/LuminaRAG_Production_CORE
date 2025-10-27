@@ -2,9 +2,15 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import os
+import json
+import faiss
+from pathlib import Path
 
 from src.FAISS.faiss_integration import load_faiss_system
 from src.model_ai.choice_model_llama import connect_ollama
+from src.config import STORAGE_CONFIG, EMBEDDING_CONFIG
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from api.querry_api.models import QueryResponse, ChunkInfo, SystemStats, DocumentInfo, HealthResponse
 
 logger = logging.getLogger(__name__)
@@ -15,36 +21,184 @@ class QueryService:
     Servicio que encapsula el sistema de consultas RAG.
     Reutiliza toda la lógica existente sin modificaciones.
     """
-    
+
     def __init__(self):
         self.faiss_system = None
         self.llm = None
         self._initialized = False
-    
+        self.collection_systems = {}  # Cache de sistemas FAISS por colección
+        self.embedding_model = None
+
     def initialize(self):
         """Inicializar el sistema RAG (carga FAISS y conecta LLM)"""
         if self._initialized:
             logger.warning("Sistema ya inicializado")
             return
-        
+
         logger.info("Inicializando sistema RAG...")
-        
-        # 1. Cargar sistema FAISS
+
+        # 1. Cargar sistema FAISS general
         logger.info("Cargando sistema FAISS...")
         self.faiss_system = load_faiss_system()
         if not self.faiss_system:
             raise RuntimeError("No se pudo cargar el sistema FAISS")
         logger.info("✅ Sistema FAISS cargado")
-        
+
         # 2. Conectar con Ollama
         logger.info("Conectando con Ollama...")
         self.llm = connect_ollama()
         if not self.llm:
             raise RuntimeError("No se pudo conectar con Ollama")
         logger.info("✅ Ollama conectado")
-        
+
+        # 3. Inicializar modelo de embeddings para consultas específicas
+        self.embedding_model = HuggingFaceEmbedding(
+            model_name=EMBEDDING_CONFIG["model_name"],
+            max_length=512,
+            device="cpu"
+        )
+
         self._initialized = True
         logger.info("🎉 Sistema RAG inicializado correctamente")
+
+    def load_collection_system(self, empresa: str, private: bool) -> Optional[Any]:
+        """
+        Cargar sistema FAISS específico para una colección empresa_privacidad
+        """
+        privacidad_str = "private" if private else "public"
+        collection_name = f"{empresa}_{privacidad_str}"
+
+        # Verificar si ya está en cache
+        if collection_name in self.collection_systems:
+            return self.collection_systems[collection_name]
+
+        try:
+            # Buscar archivo FAISS de la colección
+            faiss_dir = Path(STORAGE_CONFIG["base_dir"]) / "faiss_collections"
+            faiss_path = faiss_dir / f"{collection_name}.faiss"
+            metadata_path = faiss_dir / f"{collection_name}_metadata.json"
+
+            if not faiss_path.exists():
+                logger.warning(f"Archivo FAISS no encontrado para colección: {collection_name}")
+                return None
+
+            # Cargar índice FAISS
+            faiss_index = faiss.read_index(str(faiss_path))
+
+            # Cargar metadata
+            metadata = {}
+            if metadata_path.exists():
+                with open(metadata_path, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+
+            # Crear sistema simplificado para consultas
+            collection_system = {
+                'faiss_index': faiss_index,
+                'metadata': metadata,
+                'collection_name': collection_name,
+                'empresa': empresa,
+                'private': private
+            }
+
+            # Cachear el sistema
+            self.collection_systems[collection_name] = collection_system
+
+            logger.info(f"✅ Sistema FAISS cargado para colección: {collection_name}")
+            return collection_system
+
+        except Exception as e:
+            logger.error(f"Error cargando sistema para colección {collection_name}: {e}")
+            return None
+
+    def process_query_by_company(self, query: str, empresa: str, private: bool, k: int = 5) -> QueryResponse:
+        """
+        Procesar consulta específica para una empresa y tipo de documento (público/privado)
+        """
+        if not self._initialized:
+            raise RuntimeError("Sistema no inicializado")
+
+        start_time = time.time()
+
+        logger.info(f"Procesando consulta para {empresa} ({'privado' if private else 'público'}): {query[:50]}...")
+
+        # 1. Cargar sistema específico para la colección
+        collection_system = self.load_collection_system(empresa, private)
+        if not collection_system:
+            return QueryResponse(
+                query=query,
+                answer=f"No se encontraron documentos {'privados' if private else 'públicos'} para la empresa {empresa}.",
+                chunks=[],
+                documents_used=[],
+                processing_time=time.time() - start_time,
+                timestamp=datetime.now().isoformat()
+            )
+
+        # 2. Generar embedding de la consulta
+        query_embedding = self.embedding_model.get_text_embedding(query)
+        if len(query_embedding) != collection_system['faiss_index'].d:
+            logger.error(f"Dimensión de embedding incorrecta: {len(query_embedding)} vs {collection_system['faiss_index'].d}")
+            return QueryResponse(
+                query=query,
+                answer="Error en el procesamiento de la consulta.",
+                chunks=[],
+                documents_used=[],
+                processing_time=time.time() - start_time,
+                timestamp=datetime.now().isoformat()
+            )
+
+        # 3. Buscar en FAISS
+        import numpy as np
+        query_vector = np.array([query_embedding], dtype=np.float32)
+        distances, indices = collection_system['faiss_index'].search(query_vector, k)
+
+        # 4. Preparar resultados
+        chunks_info = []
+        documents_used = set()
+        metadata = collection_system['metadata']
+
+        documents = metadata.get('documents', [])
+
+        for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
+            if idx < len(documents) and idx >= 0:
+                doc_info = documents[idx]
+                chunks_info.append(ChunkInfo(
+                    chunk_id=f"{collection_system['collection_name']}_{idx}",
+                    content=f"Documento: {doc_info.get('file_name', 'unknown')} - Empresa: {empresa} ({'Privado' if private else 'Público'})",
+                    score=float(1 / (1 + distance)),  # Convertir distancia a similitud
+                    document=doc_info.get('file_name', 'unknown')
+                ))
+                documents_used.add(doc_info.get('file_name', 'unknown'))
+
+        # 5. Generar respuesta con LLM usando contexto limitado
+        context = "\n".join([chunk.content for chunk in chunks_info[:3]])  # Usar primeros 3 resultados
+
+        prompt = f"""
+        Basándote en los siguientes documentos {'privados' if private else 'públicos'} de la empresa {empresa}:
+
+        {context}
+
+        Responde la siguiente consulta: {query}
+
+        Si no hay información suficiente, indica que no se encontraron datos relevantes.
+        """
+
+        try:
+            answer = self.llm.invoke(prompt)
+            logger.info("✅ Respuesta generada exitosamente")
+        except Exception as e:
+            logger.error(f"Error generando respuesta: {e}")
+            answer = f"Se encontraron {len(chunks_info)} documentos relevantes, pero hubo un error generando la respuesta."
+
+        processing_time = time.time() - start_time
+
+        return QueryResponse(
+            query=query,
+            answer=answer,
+            chunks=chunks_info,
+            documents_used=list(documents_used),
+            processing_time=processing_time,
+            timestamp=datetime.now().isoformat()
+        )
     
     def process_query(self, query: str, k: int = 5, k_roots: int = 5, 
                     include_context: bool = True) -> QueryResponse:
