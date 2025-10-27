@@ -1,90 +1,200 @@
 # 🌟 LuminaMO_RAG - Sistema RAG Jerárquico Avanzado
 
-Sistema de Recuperación Aumentada Generativa (RAG) con arquitectura jerárquica de grafos, embeddings multilingües y análisis de grafos avanzado.
+Sistema de Recuperación Aumentada Generativa (RAG) con arquitectura jerárquica de grafos, embeddings multilingües y análisis de grafos avanzado. **Ahora con API especializada por empresa y control de privacidad**.
+
+## ✨ Novedades v2.0
+
+- 🏢 **Indexación por Empresa**: Documentos organizados en colecciones específicas por empresa
+- 🔒 **Control de Acceso**: Separación automática entre documentos públicos y privados
+- 🚀 **API REST Completa**: Endpoints dedicados para indexación y consultas filtradas
+- 📊 **Colecciones Dinámicas**: Sistema FAISS que crea colecciones `empresa_public` y `empresa_private`
+- 🐳 **Docker Optimizado**: Despliegue contenerizado completo
 
 ## 🏗️ Arquitectura
 
-### 🌳 Grafos Jerárquicos
-- **Grafos por Documento**: Cada documento forma un árbol balanceado binario con nodos raíz
-- **Meta-Grafo**: Las raíces de documentos se conectan para análisis cruzado
-- **Análisis PageRank**: Estrategias especializadas (mixed, roots_first, within_docs, meta_only)
-- **Migración Automática**: Convierte grafos simples a jerárquicos sin pérdida de datos
+### 🌳 Grafos Jerárquicos + Control de Empresa
+```
+S3 Bucket Structure:
+FINFERSSA/
+├── public/
+│   ├── manual_usuario.pdf
+│   └── guia_instalacion.docx
+└── private/
+    ├── contrato_servicio.pdf
+    └── datos_financieros.xlsx
+
+FAISS Collections:
+├── FINFERSSA_public.faiss    # Documentos públicos
+└── FINFERSSA_private.faiss   # Documentos privados
+```
 
 ### 🔧 Componentes Principales
-- **index.py**: Indexador principal con esquema Milvus jerárquico
-- **query.py**: Sistema de consultas avanzado con múltiples estrategias
-- **utils.py**: Herramientas de gestión y comparación de grafos
-- **migrate_graph.py**: Migración de arquitecturas legacy
+- **api_server.py**: Servidor FastAPI con endpoints especializados
+- **index.py**: Indexador principal con esquema jerárquico
+- **query_by_company.py**: Consultas interactivas por empresa
+- **src/api/index/**: Endpoints de indexación por empresa
+- **src/api/querry_api/**: Endpoints de consulta con filtros
 
 ## 🚀 Inicio Rápido
 
-### 1. Configuración del Entorno
-```bash
-# Instalar dependencias
-pip install -r requirements.txt
+### Opción 1: Docker (Recomendado)
 
-# Tu archivo .env ya está configurado correctamente con:
-# - LLAMA_CLOUD_API_KEY para LlamaParse
-# - OLLAMA_MODEL=llama3.2:latest
-# - MILVUS configurado en localhost:19530
-# - Embeddings multilingües configurados
+```bash
+# Desplegar completo
+./deploy.sh
+
+# Ver logs
+docker-compose logs -f
 ```
 
-### 2. Iniciar Servicios
-```bash
-# Milvus (en directorio Lumina_Milvus)
-docker-compose up -d
+### Opción 2: Desarrollo Local
 
-# Ollama (en directorio LuminaMO_Model_IA)
-docker-compose up -d
+```bash
+# Configurar entorno
+./dev.sh
+
+# Ejecutar servidor
+python api_server.py --reload
 ```
 
-### 3. Indexar Documentos
-```bash
-# Indexación jerárquica principal
-python3 index.py
+## 📋 API Endpoints
 
-# Ver estadísticas del proceso
-python3 utils.py
+### Indexación
+```http
+POST /api/v1/index
+Content-Type: application/json
+
+{
+  "empresa": "FINFERSSA",
+  "titulo": "Documento de prueba",
+  "private": false
+}
+```
+**Respuesta**: Indexa documentos desde S3 y crea colección `FINFERSSA_public.faiss`
+
+### Consultas por Empresa
+
+#### Documentos Públicos
+```http
+POST /api/v1/query/public/{empresa}
+Content-Type: application/json
+
+{
+  "query": "¿Qué información hay sobre contratos?",
+  "k": 5
+}
+```
+**Ejemplo**: `POST /api/v1/query/public/FINFERSSA`
+
+#### Documentos Privados
+```http
+POST /api/v1/query/private/{empresa}
+Content-Type: application/json
+
+{
+  "query": "¿Qué información confidencial hay?",
+  "k": 5
+}
+```
+**Ejemplo**: `POST /api/v1/query/private/FINFERSSA`
+
+### Sistema
+- `GET /api/v1/health` - Estado del sistema
+- `GET /api/v1/stats` - Estadísticas del sistema
+- `GET /api/v1/documents` - Lista de documentos
+
+## 🔧 Configuración
+
+### Variables de Entorno (.env)
+
+```env
+# Ollama (para LLM)
+OLLAMA_BASE_URL=http://localhost:11434
+
+# LlamaCloud (para parsing de documentos)
+LLAMA_CLOUD_API_KEY=tu_api_key_aqui
+
+# AWS S3
+AWS_ACCESS_KEY_ID=tu_access_key
+AWS_SECRET_ACCESS_KEY=tu_secret_key
+S3_BUCKET_NAME=tu_bucket
+S3_REGION=us-east-1
 ```
 
-### 4. Consultar Sistema
-```bash
-# Sistema interactivo avanzado
-python3 query.py
+### Estructura S3 Requerida
 
-# Seleccionar estrategia de búsqueda:
-# - mixed: Combina todos los enfoques
-# - roots_first: Prioriza nodos raíz
-# - within_docs: Búsqueda dentro de documentos
-# - meta_only: Solo conexiones meta-grafo
+```
+tu-bucket/
+├── FINFERSSA/
+│   ├── public/
+│   │   ├── manual.pdf
+│   │   └── guia.docx
+│   └── private/
+│       ├── contrato.pdf
+│       └── datos.xlsx
+└── OTRA_EMPRESA/
+    ├── public/
+    └── private/
 ```
 
-## 📁 Estructura del Proyecto
+## 🧪 Pruebas
 
+```bash
+# Pruebas completas de API
+python test_api_complete.py
+
+# Documentación interactiva
+# http://localhost:8000/docs
+```
+
+## � Flujo de Trabajo
+
+1. **Indexación**: `POST /api/v1/index` con `{"empresa": "FINFERSSA", "private": false}`
+2. **Sistema**: Crea colección `FINFERSSA_public.faiss` con documentos de `FINFERSSA/public/`
+3. **Consulta Pública**: `POST /api/v1/query/public/FINFERSSA` busca solo en documentos públicos
+4. **Consulta Privada**: `POST /api/v1/query/private/FINFERSSA` busca solo en documentos privados
+
+## � Monitoreo
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Ver logs
+docker-compose logs -f lumina-rag-api
+```
+
+## 🛠️ Desarrollo
+
+### Estructura Actualizada
 ```
 LuminaMO_RAG/
-├── 📄 index.py              # Indexador principal jerárquico
-├── 🔍 query.py              # Sistema de consultas avanzado
-├── 🔧 utils.py              # Utilidades de gestión
-├── 🔄 migrate_graph.py      # Migración de grafos
-├── 📚 src/
-│   ├── 🗂️ document_graph/
-│   │   ├── hierarchical_graph.py     # Grafo jerárquico principal
-│   │   ├── simple_graph.py           # Grafo simple base
-│   │   ├── core/
-│   │   │   ├── hierarchical_analyzer.py  # Análisis PageRank jerárquico
-│   │   │   ├── graph_analyzer.py         # Análisis base
-│   │   │   └── graph_manager.py          # Gestión de grafos
-│   │   └── utils/
-│   │       ├── hierarchical_graph_builder.py  # Constructor jerárquico
-│   │       └── graph_builder.py               # Constructor base
-│   ├── 🔗 embedding/          # Modelos de embedding
-│   ├── 🤖 model_ai/           # Integración LLM
-│   ├── 🗄️ db_milvus/          # Conexión y esquemas Milvus
-│   └── ⚙️ config/             # Configuración centralizada
-└── 📖 test/                   # Scripts de prueba y validación
+├── api_server.py              # 🚀 Servidor FastAPI principal
+├── test_api_complete.py        # 🧪 Pruebas de API
+├── src/
+│   ├── api/
+│   │   ├── index/             # 📥 Endpoints de indexación
+│   │   └── querry_api/        # 🔍 Endpoints de consulta
+│   ├── parse_docs/            # 📄 Parsing con metadata S3
+│   ├── FAISS/                 # 🚀 Sistema FAISS
+│   └── config/                # ⚙️ Configuración
+├── data/                      # 💾 Datos persistentes
+├── docker-compose.yml         # 🐳 Configuración Docker
+└── requirements.txt           # 📦 Dependencias
 ```
+
+### Agregar Nueva Empresa
+
+1. **Organizar en S3**: `empresa/public/` y `empresa/private/`
+2. **Indexar**: 
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/index \
+     -H "Content-Type: application/json" \
+     -d '{"empresa": "NUEVA_EMPRESA", "private": false}'
+   ```
+3. **Consultar**: 
+   - Públicos: `/api/v1/query/public/NUEVA_EMPRESA`
+   - Privados: `/api/v1/query/private/NUEVA_EMPRESA`
 
 ## 🎯 Características Avanzadas
 
@@ -99,136 +209,66 @@ LuminaMO_RAG/
 - **Importancia Jerárquica**: Scores que consideran posición en el árbol
 - **Contexto Enriquecido**: Combina información jerárquica y semántica
 
-### 🔍 Búsqueda Inteligente
-- **Estrategias Múltiples**: Adaptadas a diferentes tipos de consultas
-- **Contexto Rico**: Incluye información jerárquica en respuestas
-- **Modo Interactivo**: Interfaz amigable para experimentación
+### 🔍 Búsqueda por Empresa
+- **Colecciones Aisladas**: Cada empresa tiene sus propias colecciones FAISS
+- **Control de Privacidad**: Separación automática público/privado
+- **Filtrado Automático**: Las consultas solo acceden a documentos permitidos
+- **Escalabilidad**: Nuevo sistema preparado para múltiples empresas
 
-## ⚙️ Configuración
+## ⚙️ Configuración Técnica
 
-La configuración está organizada en los siguientes grupos y todos los valores DEBEN ser definidos en el archivo `.env`:
+### CHUNKING_CONFIG
+- `chunk_size`: Tamaño de fragmentos (default: 2000)
+- `chunk_overlap`: Solapamiento entre fragmentos (default: 100)
+- `chunk_window_size`: Ventana para SentenceWindowNodeParser (default: 3)
 
-### 🔧 CHUNKING_CONFIG
+### EMBEDDING_CONFIG
+- `embedding_dim`: Dimensión del vector (default: 768)
+- `model_name`: Modelo de embedding (default: "efederici/e5-base-multilingual-4096")
 
-Controla el comportamiento del chunking (fragmentación) de documentos:
+### MILVUS_CONFIG
+- `host`: Host de Milvus (default: "localhost")
+- `port`: Puerto de Milvus (default: "19530")
 
-- `chunk_size`: Tamaño de cada fragmento en tokens (Variable de entorno: `CHUNK_SIZE`, valor por defecto: 2000)
-- `chunk_overlap`: Solapamiento entre fragmentos en tokens (Variable de entorno: `CHUNK_OVERLAP`, valor por defecto: 100)
-- `chunk_window_size`: Número de oraciones por ventana para el SentenceWindowNodeParser (Variable de entorno: `CHUNK_WINDOW_SIZE`, valor por defecto: 3)
-
-### 🤖 EMBEDDING_CONFIG
-
-Configuración relacionada con los modelos de embedding:
-
-- `embedding_dim`: Dimensión del vector de embedding (Variable de entorno: `EMBEDDING_DIM`, valor por defecto: 768)
-- `model_name`: Modelo de embedding a utilizar (Variable de entorno: `EMBEDDING_MODEL`, valor por defecto: "efederici/e5-base-multilingual-4096")
-
-### 🗄️ MILVUS_CONFIG
-
-Configuración para la conexión a Milvus:
-
-- `host`: Host de Milvus (Variable de entorno: `MILVUS_HOST`, valor por defecto: "localhost")
-- `port`: Puerto de Milvus (Variable de entorno: `MILVUS_PORT`, valor por defecto: "19530")
-- `user`: Usuario de Milvus (Variable de entorno: `MILVUS_USER`, valor por defecto: "minioadmin")
-- `password`: Contraseña de Milvus (Variable de entorno: `MILVUS_PASSWORD`, valor por defecto: "minioadmin")
-
-### 🦙 OLLAMA_CONFIG
-
-Configuración para la conexión a Ollama:
-
-- `model`: Modelo a utilizar en Ollama (Variable de entorno: `OLLAMA_MODEL`, valor por defecto: "llama3.2")
-- `base_url`: URL base para conectar con Ollama (Variable de entorno: `OLLAMA_BASE_URL`, valor por defecto: "http://localhost:11435")
-
-### 📁 PATH_CONFIG
-
-Configuración de rutas:
-
-- `pdf_directory`: Directorio donde se encuentran los archivos PDF (Variable de entorno: `PDF_DIRECTORY`, valor por defecto: "pdfs")
-
-## 💻 Uso Programático
-
-Para utilizar la configuración en cualquier módulo, simplemente importa los objetos de configuración necesarios:
-
-```python
-from src.config import CHUNKING_CONFIG, EMBEDDING_CONFIG, MILVUS_CONFIG, OLLAMA_CONFIG, PATH_CONFIG
-
-# Usar la configuración
-chunk_size = CHUNKING_CONFIG["chunk_size"]
-model_name = EMBEDDING_CONFIG["model_name"]
-```
-
-## 🔧 Modificación de la Configuración
-
-Para configurar el sistema:
-
-**Usando el archivo .env**: Tu archivo `.env` ya está configurado correctamente con todas las variables necesarias:
-
-```bash
-# Tu configuración actual (.env)
-LLAMA_CLOUD_API_KEY=llx-xxx (configurado)
-OLLAMA_MODEL=llama3.2:latest
-OLLAMA_BASE_URL=http://localhost:11435
-MILVUS_HOST=localhost
-MILVUS_PORT=19530
-EMBEDDING_MODEL=efederici/e5-base-multilingual-4096
-# ... y todas las demás variables necesarias
-```
-
-**IMPORTANTE**: Todas las variables deben estar definidas en el archivo `.env` para que el sistema funcione correctamente.
+### OLLAMA_CONFIG
+- `model`: Modelo Ollama (default: "llama3.2")
+- `base_url`: URL base Ollama (default: "http://localhost:11435")
 
 ## 🧪 Testing y Validación
 
 ```bash
-# Ejecutar pruebas completas
-python3 test/test_complete_flow.py
+# Pruebas de API completas
+python test_api_complete.py
 
-# Probar arquitectura jerárquica
-python3 test/test_refactored_architecture.py
-
-# Validar migración
-python3 migrate_graph.py
+# Pruebas de arquitectura
+python test/test_refactored_architecture.py
 
 # Utilidades de gestión
-python3 utils.py
+python utils.py
 ```
 
-## 🚨 Migración desde Versiones Anteriores
+## 🚨 Migración
 
-Si tienes grafos simples existentes:
+Para migrar desde versiones anteriores:
 
 ```bash
-# Migración automática
-python3 migrate_graph.py
-
-# Verificar resultado
-python3 utils.py
-# Seleccionar opción 1: Comparar grafos
+# El sistema ahora usa colecciones dinámicas
+# Los datos antiguos se mantienen compatibles
+# Nueva funcionalidad disponible vía API
 ```
 
 ## 📈 Monitoreo y Estadísticas
 
 ```bash
-# Ver estadísticas detalladas
-python3 utils.py
-# Seleccionar opción 4: Estadísticas detalladas
+# Estadísticas del sistema
+curl http://localhost:8000/api/v1/stats
 
-# Inspeccionar grafo específico
-python3 utils.py  
-# Seleccionar opción 5: Inspeccionar grafo específico
+# Health check continuo
+curl http://localhost:8000/health
 ```
-
-## 🛠️ Arquitecturas Disponibles
-
-### 🌳 Jerárquica (Recomendada)
-- **Uso**: `python3 index.py` y `python3 query.py`
-- **Ventajas**: Mejor organización, análisis avanzado, escalabilidad
-- **Casos de uso**: Múltiples documentos, análisis detallado
-
-### 📝 Simple (Legacy)
-- **Uso**: `python3 manual_index_legacy.py` y `python3 simple_query_legacy.py`
-- **Ventajas**: Simplicidad, compatibilidad
-- **Casos de uso**: Documentos únicos, pruebas rápidas
 
 ---
 
-🌟 **Desarrollado para análisis de documentos inteligente con arquitectura jerárquica avanzada**
+� **Lumina RAG v2.0** - Sistema RAG empresarial con control de acceso y API especializada.
+
+**Documentación completa**: http://localhost:8000/docs
