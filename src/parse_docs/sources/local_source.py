@@ -1,65 +1,55 @@
+# src/parse_docs/sources/local_source.py
 import os
 import json
+from typing import List
 from pathlib import Path
-from typing import List, Optional
-from src.config import PATH_CONFIG, PARSING_CONFIG, STORAGE_CONFIG
+from src.config import DOCUMENT_SOURCE_CONFIG
+
 
 class LocalFileSource:
+    """Source for local file system documents"""
 
     def __init__(self):
-        self.directory_path = PATH_CONFIG["pdf_directory"]
-        self.supported_extensions = PARSING_CONFIG["supported_extensions"]
-        self.tracking_file = os.path.join(STORAGE_CONFIG["base_dir"], "processed_files_local.json")
+        self.local_dir = DOCUMENT_SOURCE_CONFIG["local_directory"]
+        self.processed_files_path = os.path.join(self.local_dir, "processed_files.json")
 
-        # Crear directorio de storage si no existe
-        os.makedirs(STORAGE_CONFIG["base_dir"], exist_ok=True)
+    def get_file_paths(self) -> List[str]:
+        """Get all file paths from local directory"""
+        if not os.path.exists(self.local_dir):
+            return []
 
-    def get_file_paths(self) -> List[Path]:
-        """Obtener rutas de archivos locales no procesados, buscando recursivamente en subdirectorios"""
-        doc_dir = Path(self.directory_path)
+        file_paths = []
+        for root, dirs, files in os.walk(self.local_dir):
+            for file in files:
+                if file.endswith(('.pdf', '.txt', '.docx', '.md')):
+                    file_paths.append(os.path.join(root, file))
+
+        return file_paths
+
+    def mark_files_processed(self, file_paths: List[str]):
+        """Mark files as processed to avoid re-indexing"""
         processed_files = self._load_processed_files()
 
-        all_files = []
-        for ext in self.supported_extensions:
-            # Buscar recursivamente en todos los subdirectorios
-            all_files.extend(doc_dir.glob(f"**/*{ext}"))
+        for file_path in file_paths:
+            processed_files[file_path] = {
+                "processed_at": str(Path(file_path).stat().st_mtime),
+                "source": "local"
+            }
 
-        # Filtrar archivos ya procesados
-        new_files = []
-        for file_path in all_files:
-            file_name = file_path.name
-            if file_name in processed_files:
-                print(f"📁 Archivo ya procesado: {file_path}")
-                continue
-            new_files.append(file_path)
+        self._save_processed_files(processed_files)
 
-        if not new_files:
-            print(f"📁 No se encontraron archivos nuevos {self.supported_extensions} en {self.directory_path} o subdirectorios")
-
-        print(f"📁 Encontrados {len(new_files)} archivos nuevos para procesar")
-        return new_files
-
-    def _load_processed_files(self) -> set:
-        """Cargar set de archivos procesados localmente"""
-        if os.path.exists(self.tracking_file):
+    def _load_processed_files(self) -> dict:
+        """Load processed files tracking"""
+        if os.path.exists(self.processed_files_path):
             try:
-                with open(self.tracking_file, 'r') as f:
-                    data = json.load(f)
-                    return set(data.get('processed_files', []))
-            except Exception as e:
-                print(f"⚠️ Error cargando tracking file local: {e}")
-        return set()
+                with open(self.processed_files_path, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
 
-    def mark_files_processed(self, file_paths: List[Path]):
-        """Marcar archivos locales como procesados"""
-        processed_files = self._load_processed_files()
-        for path in file_paths:
-            file_name = path.name
-            processed_files.add(file_name)
-
-        try:
-            with open(self.tracking_file, 'w') as f:
-                json.dump({'processed_files': list(processed_files)}, f, indent=2)
-            print(f"✅ Marcados {len(file_paths)} archivos locales como procesados")
-        except Exception as e:
-            print(f"❌ Error guardando tracking file local: {e}")
+    def _save_processed_files(self, processed_files: dict):
+        """Save processed files tracking"""
+        os.makedirs(os.path.dirname(self.processed_files_path), exist_ok=True)
+        with open(self.processed_files_path, 'w') as f:
+            json.dump(processed_files, f, indent=2)
