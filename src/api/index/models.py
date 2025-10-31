@@ -16,7 +16,7 @@ class DocumentToIndex(BaseModel):
     private: Optional[bool] = Field(False, description="Is the document private?")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "empresa": "FINFERSSA",
                 "titulo": "Contrato de servicio",
@@ -35,7 +35,7 @@ class IndexResponse(BaseModel):
     milvus_collection: str = Field(..., description="Milvus collection name")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "success": True,
                 "message": "Documentos indexados exitosamente",
