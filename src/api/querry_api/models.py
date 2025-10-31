@@ -37,7 +37,7 @@ class QueryResponse(BaseModel):
     chunks: List[ChunkInfo]
     documents_used: List[str]
     processing_time: float
-    timestamap: str
+    timestamp: str
     
     class Config:
         json_schema_extra = {
