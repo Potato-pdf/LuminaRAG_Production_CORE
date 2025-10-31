@@ -127,6 +127,14 @@ class APISource:
                 return {}
         return {}
 
+    def _save_processed_files(self, processed_files: dict):
+        """Save processed files tracking"""
+        try:
+            with open(self.processed_files_path, 'w') as f:
+                json.dump(processed_files, f, indent=2)
+        except Exception as e:
+            print(f"Error saving processed files: {e}")
+
     def get_file_paths(self) -> List[str]:
         """Get file paths from downloaded documents"""
         documents_metadata = self.get_documents_with_metadata()

@@ -1,1 +1,1 @@
-from .parse_docs import parse_documents
+from .parse_docs import parse_documents, parse_documents_with_metadata
