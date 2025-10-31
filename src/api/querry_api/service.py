@@ -172,24 +172,31 @@ class QueryService:
                 documents_used.add(doc_info.get('file_name', 'unknown'))
 
         # 5. Generar respuesta con LLM usando contexto limitado
-        context = "\n".join([chunk.content for chunk in chunks_info[:3]])  # Usar primeros 3 resultados
+        context = "\n".join([chunk.content for chunk in chunks_info[:5]])  # Usar primeros 5 resultados
 
         prompt = f"""
-        Basándote en los siguientes documentos {'privados' if private else 'públicos'} de la empresa {empresa}:
-
+        Eres un asistente especializado en información de la empresa {empresa}. 
+        Solo tienes acceso a documentos {'privados' if private else 'públicos'} de esta empresa.
+        
+        IMPORTANTE: 
+        - Responde ÚNICAMENTE basándote en la información de los documentos {'privados' if private else 'públicos'} de {empresa} proporcionados abajo.
+        - No uses conocimiento general ni información de otras empresas.
+        - Si la consulta requiere información que no está en estos documentos, indica claramente que no tienes acceso a esa información.
+        - Menciona explícitamente si la información es de documentos privados o públicos cuando sea relevante.
+        
+        DOCUMENTOS DISPONIBLES ({'PRIVADOS' if private else 'PÚBLICOS'} de {empresa}):
         {context}
-
-        Responde la siguiente consulta: {query}
-
-        Si no hay información suficiente, indica que no se encontraron datos relevantes.
-        """
+        
+        CONSULTA: {query}
+        
+        Respuesta:"""
 
         try:
             answer = self.llm.invoke(prompt)
             logger.info("✅ Respuesta generada exitosamente")
         except Exception as e:
             logger.error(f"Error generando respuesta: {e}")
-            answer = f"Se encontraron {len(chunks_info)} documentos relevantes, pero hubo un error generando la respuesta."
+            answer = f"Se encontraron {len(chunks_info)} documentos relevantes de {empresa} ({'privados' if private else 'públicos'}), pero hubo un error generando la respuesta."
 
         processing_time = time.time() - start_time
 

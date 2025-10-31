@@ -35,7 +35,7 @@ EMBEDDING_CONFIG = {
 LLM_CONFIG = {
     "model_name": os.getenv("OLLAMA_MODEL", "llama3.2"),
     "api_key": os.getenv("LLAMA_CLOUD_API_KEY", ""),
-    "base_url": os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434"),
+    "base_url": os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
     "temperature": float(os.getenv("LLM_TEMPERATURE", "0.1")),
     "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "512")),
 }
