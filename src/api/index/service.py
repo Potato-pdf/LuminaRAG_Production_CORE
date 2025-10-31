@@ -11,6 +11,7 @@ from src.config import API_CONFIG, CHUNKING_CONFIG, EMBEDDING_CONFIG
 from llama_index.core.node_parser import SentenceWindowNodeParser
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from .models import IndexResponse
+from api.querry_api.models import QueryResponse, ChunkInfo, SystemStats, DocumentInfo, HealthResponse
 
 logger = logging.getLogger(__name__)
 
