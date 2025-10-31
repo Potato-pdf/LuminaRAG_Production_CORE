@@ -41,8 +41,10 @@ class QueryService:
         logger.info("Cargando sistema FAISS...")
         self.faiss_system = load_faiss_system()
         if not self.faiss_system:
-            raise RuntimeError("No se pudo cargar el sistema FAISS")
-        logger.info("✅ Sistema FAISS cargado")
+            logger.warning("Sistema FAISS general no encontrado - funcionando en modo colección por empresa")
+            self.faiss_system = None
+        else:
+            logger.info("✅ Sistema FAISS cargado")
 
         # 2. Conectar con Ollama
         logger.info("Conectando con Ollama...")
@@ -209,6 +211,16 @@ class QueryService:
         """
         if not self._initialized:
             raise RuntimeError("Sistema no inicializado")
+        
+        if self.faiss_system is None:
+            return QueryResponse(
+                query=query,
+                answer="Sistema FAISS general no disponible. Use consultas específicas por empresa.",
+                chunks=[],
+                documents_used=[],
+                processing_time=0.0,
+                timestamp=datetime.now().isoformat()
+            )
         
         start_time = time.time()
         
@@ -377,6 +389,15 @@ class QueryService:
         if not self._initialized:
             raise RuntimeError("Sistema no inicializado")
         
+        if self.faiss_system is None:
+            return SystemStats(
+                total_documents=0,
+                total_chunks=0,
+                indexed_roots=0,
+                system_status="collection_mode",
+                faiss_index_size=0
+            )
+        
         stats = self.faiss_system.get_stats()
         
         return SystemStats(
@@ -391,6 +412,9 @@ class QueryService:
         """Obtener lista de documentos disponibles"""
         if not self._initialized:
             raise RuntimeError("Sistema no inicializado")
+        
+        if self.faiss_system is None:
+            return []
         
         stats = self.faiss_system.get_stats()
         documents = []
@@ -418,10 +442,12 @@ class QueryService:
         faiss_loaded = self.faiss_system is not None
         llm_connected = self.llm is not None
         
-        status = "healthy" if (faiss_loaded and llm_connected) else "unhealthy"
+        status = "healthy" if llm_connected else "unhealthy"
+        if faiss_loaded:
+            status = "healthy"
         
         details = None
-        if self._initialized:
+        if self._initialized and faiss_loaded:
             try:
                 stats = self.faiss_system.get_stats()
                 details = {
@@ -430,6 +456,8 @@ class QueryService:
                 }
             except:
                 pass
+        elif self._initialized:
+            details = {"mode": "collection_mode"}
         
         return HealthResponse(
             status=status,
