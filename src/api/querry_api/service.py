@@ -153,43 +153,64 @@ class QueryService:
         query_vector = np.array([query_embedding], dtype=np.float32)
         distances, indices = collection_system['faiss_index'].search(query_vector, k)
 
-        # 4. Preparar resultados
+        # 4. Preparar resultados con contenido real de los chunks
         chunks_info = []
         documents_used = set()
         metadata = collection_system['metadata']
 
-        documents = metadata.get('documents', [])
+        chunks_data = metadata.get('chunks', [])
 
         for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
-            if idx < len(documents) and idx >= 0:
-                doc_info = documents[idx]
+            if idx < len(chunks_data) and idx >= 0:
+                chunk_data = chunks_data[idx]
+                
+                # Validar que el chunk pertenece a la empresa y privacidad correctas
+                if chunk_data.get('empresa') != empresa or chunk_data.get('private') != private:
+                    logger.warning(f"Chunk {idx} no pertenece a {empresa} ({'privado' if private else 'público'}), omitiendo")
+                    continue
+                
                 chunks_info.append(ChunkInfo(
                     chunk_id=f"{collection_system['collection_name']}_{idx}",
-                    content=f"Documento: {doc_info.get('file_name', 'unknown')} - Empresa: {empresa} ({'Privado' if private else 'Público'})",
+                    content=chunk_data.get('content', ''),
                     score=float(1 / (1 + distance)),  # Convertir distancia a similitud
-                    document=doc_info.get('file_name', 'unknown')
+                    document=chunk_data.get('file_name', 'unknown')
                 ))
-                documents_used.add(doc_info.get('file_name', 'unknown'))
+                documents_used.add(chunk_data.get('file_name', 'unknown'))
 
-        # 5. Generar respuesta con LLM usando contexto limitado
-        context = "\n".join([chunk.content for chunk in chunks_info[:5]])  # Usar primeros 5 resultados
+        # 5. Generar respuesta con LLM usando contenido real de los chunks
+        if not chunks_info:
+            return QueryResponse(
+                query=query,
+                answer=f"No se encontró información relevante en los documentos {'privados' if private else 'públicos'} de {empresa} para responder esta consulta.",
+                chunks=[],
+                documents_used=[],
+                processing_time=time.time() - start_time,
+                timestamp=datetime.now().isoformat()
+            )
+        
+        # Construir contexto con los chunks más relevantes
+        context_parts = []
+        for i, chunk in enumerate(chunks_info[:5], 1):
+            context_parts.append(f"[FRAGMENTO {i}] (Documento: {chunk.document}, Relevancia: {chunk.score:.2f})\n{chunk.content}")
+        
+        context = "\n\n".join(context_parts)
 
         prompt = f"""
         Eres un asistente especializado en información de la empresa {empresa}. 
-        Solo tienes acceso a documentos {'privados' if private else 'públicos'} de esta empresa.
+        Solo tienes acceso a documentos {'PRIVADOS' if private else 'PÚBLICOS'} de esta empresa.
         
-        IMPORTANTE: 
-        - Responde ÚNICAMENTE basándote en la información de los documentos {'privados' if private else 'públicos'} de {empresa} proporcionados abajo.
-        - No uses conocimiento general ni información de otras empresas.
-        - Si la consulta requiere información que no está en estos documentos, indica claramente que no tienes acceso a esa información.
-        - Menciona explícitamente si la información es de documentos privados o públicos cuando sea relevante.
+        RESTRICCIONES IMPORTANTES: 
+        - Responde ÚNICAMENTE basándote en la información de los fragmentos de documentos {'privados' if private else 'públicos'} de {empresa} proporcionados abajo.
+        - NO uses conocimiento general ni información de otras fuentes.
+        - Si la consulta requiere información que no está en estos fragmentos, indica claramente que no tienes acceso a esa información en los documentos {'privados' if private else 'públicos'} disponibles.
+        - Cita el número del fragmento cuando uses información de él (ej: "Según el Fragmento 1...").
         
-        DOCUMENTOS DISPONIBLES ({'PRIVADOS' if private else 'PÚBLICOS'} de {empresa}):
+        FRAGMENTOS DE DOCUMENTOS {'PRIVADOS' if private else 'PÚBLICOS'} DE {empresa}:
         {context}
         
         CONSULTA: {query}
         
-        Respuesta:"""
+        Respuesta (solo basada en los fragmentos anteriores):"""
 
         try:
             answer = self.llm.invoke(prompt)

@@ -184,22 +184,31 @@ class IndexService:
             "documents": []
         }
 
-        # Agregar información de documentos
+        # Agregar información de documentos con contenido completo
+        chunks_data = []
         doc_info = {}
         for i, node in enumerate(nodes):
             file_name = node.metadata.get('file_name', 'unknown')
+            
+            # Guardar chunk completo con su contenido
+            chunks_data.append({
+                "id": i,
+                "file_name": file_name,
+                "content": node.get_content(),
+                "empresa": empresa,
+                "private": private
+            })
+            
             if file_name not in doc_info:
                 doc_info[file_name] = {
                     "file_name": file_name,
                     "empresa": empresa,
                     "private": private,
-                    "chunks": []
+                    "chunk_count": 0
                 }
-            doc_info[file_name]["chunks"].append({
-                "id": i,
-                "content_preview": node.get_content()[:200] + "..." if len(node.get_content()) > 200 else node.get_content()
-            })
+            doc_info[file_name]["chunk_count"] += 1
 
+        metadata["chunks"] = chunks_data
         metadata["documents"] = list(doc_info.values())
 
         # Guardar metadata
