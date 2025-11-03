@@ -90,3 +90,14 @@ S3_CONFIG = {
     "access_key": os.getenv("AWS_ACCESS_KEY_ID", ""),
     "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
 }
+
+# =============================================================================
+# CONFIGURACIÓN DE S3 PARA ÍNDICES FAISS
+# =============================================================================
+S3_FAISS_CONFIG = {
+    "bucket_name": os.getenv("S3_FAISS_BUCKET", os.getenv("S3_BUCKET", "lumina-documents")),
+    "region": os.getenv("S3_FAISS_REGION", os.getenv("S3_REGION", "us-east-1")),
+    "access_key": os.getenv("AWS_ACCESS_KEY_ID", ""),
+    "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+    "prefix": os.getenv("S3_FAISS_PREFIX", "faiss_indices/"),
+}
