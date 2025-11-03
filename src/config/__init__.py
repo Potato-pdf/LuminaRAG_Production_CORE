@@ -14,6 +14,7 @@ from .settings import (
     MILVUS_CONFIG,
     DOCUMENT_SOURCE_CONFIG,
     S3_CONFIG,
+    S3_FAISS_CONFIG,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "MILVUS_CONFIG",
     "DOCUMENT_SOURCE_CONFIG",
     "S3_CONFIG",
+    "S3_FAISS_CONFIG",
 ]

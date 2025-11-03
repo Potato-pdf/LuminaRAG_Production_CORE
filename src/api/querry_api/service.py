@@ -81,8 +81,10 @@ class QueryService:
             metadata_path = faiss_dir / f"{collection_name}_metadata.json"
 
             if not faiss_path.exists():
-                logger.warning(f"Archivo FAISS no encontrado para colección: {collection_name}")
-                return None
+                logger.info(f"Índice FAISS no encontrado localmente, intentando descargar desde S3...")
+                if not self._download_from_s3(collection_name, faiss_path, metadata_path):
+                    logger.warning(f"Archivo FAISS no encontrado ni local ni en S3 para: {collection_name}")
+                    return None
 
             # Cargar índice FAISS
             faiss_index = faiss.read_index(str(faiss_path))
@@ -111,6 +113,73 @@ class QueryService:
         except Exception as e:
             logger.error(f"Error cargando sistema para colección {collection_name}: {e}")
             return None
+    
+    def _download_from_s3(self, collection_name: str, faiss_path: Path, metadata_path: Path) -> bool:
+        """Descargar índice FAISS y metadata desde S3"""
+        import boto3
+        from src.config import S3_FAISS_CONFIG
+        
+        try:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=S3_FAISS_CONFIG["access_key"],
+                aws_secret_access_key=S3_FAISS_CONFIG["secret_key"],
+                region_name=S3_FAISS_CONFIG["region"]
+            )
+            
+            bucket = S3_FAISS_CONFIG["bucket_name"]
+            s3_prefix = S3_FAISS_CONFIG["prefix"]
+            
+            # Asegurar que el directorio local existe
+            faiss_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Descargar índice FAISS
+            s3_faiss_key = f"{s3_prefix}{collection_name}.faiss"
+            s3_client.download_file(bucket, s3_faiss_key, str(faiss_path))
+            logger.info(f"☁️ Índice FAISS descargado desde S3: {s3_faiss_key}")
+            
+            # Descargar metadata
+            s3_metadata_key = f"{s3_prefix}{collection_name}_metadata.json"
+            s3_client.download_file(bucket, s3_metadata_key, str(metadata_path))
+            logger.info(f"☁️ Metadata descargada desde S3: {s3_metadata_key}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error descargando desde S3: {e}")
+            return False
+    
+    def _download_from_s3(self, collection_name: str, faiss_path: Path, metadata_path: Path) -> bool:
+        """Descargar índice FAISS y metadata desde S3"""
+        import boto3
+        from src.config import S3_CONFIG
+        
+        try:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=S3_CONFIG["access_key"],
+                aws_secret_access_key=S3_CONFIG["secret_key"],
+                region_name=S3_CONFIG["region"]
+            )
+            
+            bucket = S3_CONFIG["bucket_name"]
+            s3_prefix = "faiss_indices/"
+            
+            # Descargar índice FAISS
+            s3_faiss_key = f"{s3_prefix}{collection_name}.faiss"
+            s3_client.download_file(bucket, s3_faiss_key, str(faiss_path))
+            logger.info(f"☁️ Índice FAISS descargado desde S3: {s3_faiss_key}")
+            
+            # Descargar metadata
+            s3_metadata_key = f"{s3_prefix}{collection_name}_metadata.json"
+            s3_client.download_file(bucket, s3_metadata_key, str(metadata_path))
+            logger.info(f"☁️ Metadata descargada desde S3: {s3_metadata_key}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error descargando desde S3: {e}")
+            return False
 
     def process_query_by_company(self, query: str, empresa: str, private: bool, k: int = 5) -> QueryResponse:
         """
