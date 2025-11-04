@@ -10,7 +10,7 @@ from api.querry_api.models import (
     HealthResponse,
     ErrorResponse
 )
-from api.querry_api.service import QueryService
+from api.querry_api.service_refactored import QueryService
 
 logger = logging.getLogger(__name__)
 
