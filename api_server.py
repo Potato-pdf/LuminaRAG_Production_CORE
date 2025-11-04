@@ -21,9 +21,9 @@ import uvicorn
 import logging
 
 from api.querry_api.routes import query_router, system_router
-from api.querry_api.service import QueryService
+from api.querry_api.service_refactored import QueryService
 from api.index.routes import index_router
-from api.index.service import IndexService
+from api.index.service_refactored import IndexService
 
 # Cargar configuración
 load_dotenv()

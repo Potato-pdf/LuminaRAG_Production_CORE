@@ -3,7 +3,7 @@ from datetime import datetime
 import logging
 
 from .models import DocumentToIndex, IndexResponse
-from .service import IndexService
+from .service_refactored import IndexService
 from api.querry_api.models import QueryResponse, ErrorResponse, QueryRequest
 
 logger = logging.getLogger(__name__)
