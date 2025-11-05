@@ -15,7 +15,7 @@ services:
     image: lumina-rag-api:latest
     container_name: lumina_rag_api
     ports:
-      - "${PORT_LUMINA:-8000}:8000"
+      - "${PORT_LUMINA:-3205}:${PORT_LUMINA:-3205}"
     environment:
       # Ollama Configuration (servicio externo en otro docker-compose)
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
@@ -84,7 +84,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT_LUMINA:-3205}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

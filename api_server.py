@@ -155,10 +155,11 @@ async def health_check():
 
 if __name__ == "__main__":
     import argparse
+    import os
     
-    parser = argparse.ArgumentParser(description="Servidor API REST Lumina RAG")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0", help="Host del servidor")
-    parser.add_argument("--port", type=int, default=8000, help="Puerto del servidor")
+    parser.add_argument("--port", type=int, default=int(os.getenv("PORT_LUMINA", "3205")), help="Puerto del servidor")
     parser.add_argument("--reload", action="store_true", help="Modo de desarrollo con auto-reload")
     
     args = parser.parse_args()
