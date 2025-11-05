@@ -1,32 +1,96 @@
+# =============================================================================
+# DOCKER COMPOSE - LUMINA RAG API (Producción)
+# =============================================================================
+# Este archivo se conecta a Ollama que está en otro proyecto
+# Ambos deben compartir la red: lumina_network
+# =============================================================================
+
+version: '3.8'
+
 services:
   lumina_rag:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: lumina_rag
-    volumes:
-      - .:/app
+    image: lumina-rag-api:latest
+    container_name: lumina_rag_api
     ports:
-      - "8000:8000"
+      - "${PORT_LUMINA:-8000}:8000"
     environment:
-      - PYTHONPATH=./src
-    depends_on:
-      - ollama
-    # Comando por defecto del Dockerfile (desarrollo con --reload)
-    # Para producción, cambia el comando en el Dockerfile descomentando la sección de PROD
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - "11435:11434"
+      # Ollama Configuration (servicio externo en otro docker-compose)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      
+      # LLM Settings
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-512}
+      
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      
+      # S3 Bucket para documentos
+      - S3_BUCKET=${S3_BUCKET:-amzn-s3-rag}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_PREFIX=${S3_PREFIX:-}
+      
+      # S3 Bucket para índices FAISS
+      - S3_FAISS_BUCKET=${S3_FAISS_BUCKET:-amzn-s3-rag}
+      - S3_FAISS_REGION=${S3_FAISS_REGION:-us-east-1}
+      - S3_FAISS_PREFIX=${S3_FAISS_PREFIX:-faiss_indices/}
+      
+      # LlamaCloud API
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      
+      # Embedding Model
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      - EMBEDDING_DIM=${EMBEDDING_DIM:-384}
+      
+      # Chunking Configuration
+      - CHUNK_SIZE=${CHUNK_SIZE:-512}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-50}
+      - CHUNK_WINDOW_SIZE=${CHUNK_WINDOW_SIZE:-3}
+      
+      # Storage Paths
+      - STORAGE_BASE_DIR=${STORAGE_BASE_DIR:-/app/storage}
+      - FAISS_DIR=${FAISS_DIR:-/app/storage/faiss_collections}
+      - GRAPHS_DIR=${GRAPHS_DIR:-/app/storage/graphs}
+      - GRAPH_PATH=${GRAPH_PATH:-/app/storage/graphs/hierarchical_graph.pkl}
+      
+      # Document Source
+      - DOCUMENT_SOURCE_TYPE=${DOCUMENT_SOURCE_TYPE:-api}
+      - DOCUMENT_PARSER=${DOCUMENT_PARSER:-llama_parse}
+      - LOCAL_DOC_DIR=${LOCAL_DOC_DIR:-/app/pdfs}
+      
+      # Milvus (opcional)
+      - MILVUS_HOST=${MILVUS_HOST:-localhost}
+      - MILVUS_PORT=${MILVUS_PORT:-19530}
+      - MILVUS_USER=${MILVUS_USER:-}
+      - MILVUS_PASSWORD=${MILVUS_PASSWORD:-}
+      - MILVUS_COLLECTION=${MILVUS_COLLECTION:-lumina_hierarchical}
+      
+      # Python
+      - PYTHONPATH=/app/src
+      - PYTHONUNBUFFERED=1
+    
     volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_MODELS=llama3.2
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    
+    networks:
+      - app_name
+    
     restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 networks:
   app_name:
     name: ${NETWORK_NAME}
-    external: true
-volumes:
-  ollama_data:
+    external: true  # La red ya existe, creada por el docker-compose de Ollama
