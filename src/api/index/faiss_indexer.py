@@ -129,7 +129,6 @@ class FAISSIndexer:
                     doc["chunk_count"] += 1
                     doc_found = True
                     break
-            
             if not doc_found:
                 existing_metadata.setdefault("documents", []).append({
                     "file_name": file_name,
