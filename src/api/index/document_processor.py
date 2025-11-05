@@ -47,8 +47,14 @@ class DocumentProcessor:
         filtered_metadata = []
         
         for doc, metadata in zip(documents, documents_metadata or []):
-            doc_empresa = metadata.get('empresa', '').strip().lower()
-            doc_private = metadata.get('private', False)
+            # Manejar tanto diccionarios como objetos DocumentMetadata
+            if isinstance(metadata, dict):
+                doc_empresa = metadata.get('empresa', '').strip().lower()
+                doc_private = metadata.get('private', False)
+            else:
+                # Es un objeto DocumentMetadata de llama-index
+                doc_empresa = getattr(metadata, 'empresa', '').strip().lower() if hasattr(metadata, 'empresa') else ''
+                doc_private = getattr(metadata, 'private', False) if hasattr(metadata, 'private') else False
             
             if doc_empresa == empresa.strip().lower() and doc_private == private:
                 filtered_documents.append(doc)
