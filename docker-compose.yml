@@ -20,7 +20,7 @@ services:
       # Ollama Configuration (servicio externo en otro docker-compose)
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
-      
+       
       # LLM Settings
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-512}
@@ -55,7 +55,7 @@ services:
       # Storage Paths
       - STORAGE_BASE_DIR=${STORAGE_BASE_DIR:-/app/storage}
       - FAISS_DIR=${FAISS_DIR:-/app/storage/faiss_collections}
-      - GRAPHS_DIR=${GRAPHS_DIR:-/app/storage/graphs}
+      - GRAPHS_DIR=${GRAPHS_DIR:-/app/storage/graphs} 
       - GRAPH_PATH=${GRAPH_PATH:-/app/storage/graphs/hierarchical_graph.pkl}
       
       # Document Source
