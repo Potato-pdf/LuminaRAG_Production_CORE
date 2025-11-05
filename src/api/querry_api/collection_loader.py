@@ -82,4 +82,4 @@ class CollectionLoader:
     def clear_cache(self):
         """Limpiar cache de colecciones"""
         self.collection_cache.clear()
-        logger.info("Cache de colecciones limpiado")
+        logger.info("Cache de colecciones limpiado") 
