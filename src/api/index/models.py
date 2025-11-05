@@ -7,20 +7,20 @@ class DocumentToIndex(BaseModel):
 
     Fields:
         empresa: Organization or company name the document belongs to.
-        titulo: Title of the document.
         private: Whether the document is private (default: False).
+        force_reindex: Force re-indexing even if collection already exists (default: False).
     """
 
     empresa: str = Field(..., description="Organization or company name")
-    titulo: str = Field(..., description="Document title")
     private: Optional[bool] = Field(False, description="Is the document private?")
+    force_reindex: Optional[bool] = Field(False, description="Force re-indexing if collection exists")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "empresa": "FINFERSSA",
-                "titulo": "Contrato de servicio",
                 "private": False,
+                "force_reindex": False
             }
         }
 

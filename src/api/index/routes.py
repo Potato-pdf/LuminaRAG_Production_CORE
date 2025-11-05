@@ -53,7 +53,8 @@ async def index_documents_endpoint(request: DocumentToIndex):
         # Procesar indexación
         response = index_service.index_documents(
             empresa=request.empresa,
-            private=request.private
+            private=request.private,
+            force_reindex=request.force_reindex
         )
 
         logger.info(f"Indexación completada: {response.documents_processed} documentos, {response.chunks_created} chunks")

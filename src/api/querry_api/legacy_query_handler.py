@@ -75,7 +75,8 @@ class LegacyQueryHandler:
         
         # Generar respuesta
         try:
-            answer = self.llm.complete(prompt).text
+            response = self.llm.invoke(prompt)
+            answer = response if isinstance(response, str) else str(response)
         except Exception as e:
             logger.error(f"Error generando respuesta: {e}")
             answer = f"Error: {str(e)}"

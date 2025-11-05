@@ -105,7 +105,7 @@ class QueryProcessor:
         answer = self._generate_answer(query, chunks_info, empresa, private)
         
         # 5. Extraer documentos usados
-        documents_used = list(set(chunk.document_id for chunk in chunks_info))
+        documents_used = list(set(chunk.document for chunk in chunks_info))
         
         processing_time = time.time() - start_time
         
@@ -135,7 +135,7 @@ class QueryProcessor:
             chunk_data = chunks_data[idx]
             chunks_info.append(ChunkInfo(
                 chunk_id=str(chunk_data.get('id', idx)),
-                document_id=chunk_data.get('file_name', 'unknown'),
+                document=chunk_data.get('file_name', 'unknown'),  # ← Cambiado de document_id a document
                 content=chunk_data.get('content', ''),
                 score=float(distance)
             ))
@@ -153,7 +153,7 @@ class QueryProcessor:
         # Construir contexto con los chunks más relevantes
         context_parts = []
         for i, chunk in enumerate(chunks_info[:5], 1):
-            context_parts.append(f"Fragmento {i} (de {chunk.document_id}):\n{chunk.content}")
+            context_parts.append(f"Fragmento {i} (de {chunk.document}):\n{chunk.content}")
         
         context = "\n\n".join(context_parts)
         
@@ -175,7 +175,8 @@ CONSULTA: {query}
 Respuesta (solo basada en los fragmentos anteriores):"""
         
         try:
-            return self.llm.complete(prompt).text
+            response = self.llm.invoke(prompt)
+            return response if isinstance(response, str) else str(response)
         except Exception as e:
             logger.error(f"Error generando respuesta con LLM: {e}")
             return f"Error al generar respuesta: {str(e)}"
