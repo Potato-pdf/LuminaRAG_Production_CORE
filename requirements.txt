@@ -137,3 +137,23 @@ wrapt==1.17.3
 yarl==1.20.1
 zstandard==0.24.0
 faiss-cpu
+<<<<<<< Updated upstream
+=======
+
+# API REST dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Database dependencies
+sqlalchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# Rate Limiting
+slowapi==0.1.9
+>>>>>>> Stashed changes
