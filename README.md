@@ -628,14 +628,79 @@ docker-compose restart
 
 ---
 
-## 🚀 Próximos Pasos
+## 🚀 Próximos Pasos / Mejoras Futuras
 
-- [ ] Configurar Alembic para migraciones de BD
-- [ ] Implementar indexación asíncrona (Celery)
-- [ ] Agregar tests unitarios e integración
+### Críticas para Producción
+
+#### 1. Configurar Alembic para Migraciones de Base de Datos
+**Estado:** ⚠️ Pendiente  
+**Prioridad:** Alta para producción
+
+**¿Qué es?** Alembic es una herramienta de migraciones de base de datos que permite:
+- Versionado de cambios en la estructura de la BD
+- Historial completo de modificaciones
+- Rollback seguro de cambios
+- Sincronización entre entornos (dev, staging, prod)
+
+**Situación Actual:**  
+El sistema usa `SQLAlchemy.create_all()` que crea las tablas automáticamente al iniciar. Esto funciona perfecto para desarrollo y testing, pero en producción es mejor tener control granular de los cambios.
+
+**Cómo implementar:**
+```bash
+# 1. Instalar Alembic
+pip install alembic==1.13.1
+
+# 2. Inicializar
+alembic init alembic
+
+# 3. Configurar alembic.ini con tu DATABASE_URL
+
+# 4. Crear migración inicial
+alembic revision --autogenerate -m "Initial schema"
+
+# 5. Aplicar migración
+alembic upgrade head
+```
+
+**Beneficios:**
+- ✅ Control de versiones de BD
+- ✅ Cambios rastreables y reversibles
+- ✅ Deploys más seguros
+- ✅ Colaboración en equipo mejorada
+
+---
+
+#### 2. Implementar Indexación Asíncrona
+**Estado:** ⚠️ Pendiente  
+**Prioridad:** Alta
+
+Actualmente la indexación es síncrona. Para producción se recomienda:
+- Usar Celery o similar para tareas en background
+- Queue de indexación (Redis/RabbitMQ)
+- Notificaciones de progreso vía webhooks
+
+#### 3. Tests Unitarios e Integración
+**Estado:** ⚠️ Pendiente  
+**Prioridad:** Alta
+
+Crear suite de tests con pytest:
+- Tests unitarios de repositorios
+- Tests de endpoints API
+- Tests de autenticación
+- Tests de permisos
+
+---
+
+### Mejoras Opcionales
+
 - [ ] Implementar webhooks para eventos
-- [ ] Agregar métricas y analytics
+- [ ] Agregar métricas y analytics (Prometheus/Grafana)
 - [ ] Sistema de facturación (Stripe)
+- [ ] Email verification en registro
+- [ ] Password reset functionality
+- [ ] Audit logs completos
+- [ ] CDN para documentos (CloudFront)
+- [ ] Client SDKs (Python, JavaScript)
 
 ---
 
