@@ -6,7 +6,7 @@ annotated-types==0.7.0
 anyio==4.10.0
 attrs==25.3.0
 banks==2.2.0
-beautifulsoup4==4.13.5
+boto3==1.35.0
 certifi==2025.8.3
 cffi==1.17.1
 charset-normalizer==3.4.3
@@ -137,13 +137,10 @@ wrapt==1.17.3
 yarl==1.20.1
 zstandard==0.24.0
 faiss-cpu
-<<<<<<< Updated upstream
-=======
 
 # API REST dependencies
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
-
 # Database dependencies
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
@@ -155,4 +152,4 @@ python-multipart==0.0.6
 
 # Rate Limiting
 slowapi==0.1.9
->>>>>>> Stashed changes
+

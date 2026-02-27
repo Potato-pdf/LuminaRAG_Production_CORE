@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-🌐 API REST PARA SISTEMA RAG LUMINA - VERSIÓN COMERCIAL
-========================================================
 
 API REST multi-tenant con autenticación, gestión de documentos y panel admin.
 
@@ -15,11 +13,27 @@ Endpoints:
 """
 
 from fastapi import FastAPI
+🌐 API REST PARA SISTEMA RAG LUMINA
+
+API REST que expone el sistema de consultas RAG sin modificar
+la lógica existente del modelo, grafo ni arquitectura.
+
+Endpoints:
+- POST /api/v1/query - Realizar consulta
+- GET /api/v1/health - Estado del sistema
+- GET /api/v1/stats - Estadísticas del sistema
+- GET /api/v1/documents - Listar documentos disponibles
+"""
+
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 import uvicorn
 import logging
+
+from src.api.routes import query_router, system_router
+from src.api.service import QueryService
 
 # Cargar configuración
 load_dotenv()
@@ -31,20 +45,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Variable global para el servicio
+query_service = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestión del ciclo de vida de la aplicación"""
+    global query_service
     
     # Startup
     logger.info("🚀 Iniciando API REST Lumina RAG...")
     try:
-        # Inicializar base de datos
-        logger.info("📊 Inicializando base de datos...")
-        from src.database import init_db
-        init_db()
-        logger.info("✅ Base de datos inicializada")
-        
+        query_service = QueryService()
+        query_service.initialize()
+        logger.info("✅ Sistema RAG inicializado correctamente")
         yield
     except Exception as e:
         logger.error(f"❌ Error inicializando sistema: {e}")
@@ -56,9 +71,9 @@ async def lifespan(app: FastAPI):
 
 # Crear aplicación FastAPI
 app = FastAPI(
-    title="Lumina RAG API - Commercial",
-    description="API REST multi-tenant para consultas RAG con autenticación y gestión de documentos",
-    version="2.0.0",
+    title="Lumina RAG API",
+    description="API REST para consultas al sistema RAG jerárquico con FAISS",
+    version="1.0.0",
     lifespan=lifespan
 )
 
@@ -71,106 +86,73 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Registrar routers de autenticación y gestión
-logger.info("📦 Registrando routers de autenticación y gestión...")
 
-from src.api.auth.routes import router as auth_router
-from src.api.documents.routes import router as documents_router
-from src.api.admin.routes import router as admin_router
+def get_query_service() -> QueryService:
+    """Dependency para obtener el servicio de consultas"""
+    if query_service is None:
+        raise HTTPException(status_code=503, detail="Servicio no inicializado")
+    return query_service
 
+
+# Registrar routers
 app.include_router(
-    auth_router,
-    prefix="/api/v1/auth",
-    tags=["Autenticación"]
+    query_router,
+    prefix="/api/v1",
+    tags=["Consultas"],
+    dependencies=[Depends(get_query_service)]
 )
 
 app.include_router(
-    documents_router,
-    prefix="/api/v1/documents",
-    tags=["Documentos"]
+    system_router,
+    prefix="/api/v1",
+    tags=["Sistema"],
+    dependencies=[Depends(get_query_service)]
 )
 
-app.include_router(
-    admin_router,
-    prefix="/api/v1/admin",
-    tags=["Administración"]
-)
 
-logger.info("✅ Routers de autenticación y gestión registrados")
-
-
-# Endpoints básicos
 @app.get("/")
 async def root():
-    """Endpoint raíz"""
+    """Endpoint raíz con información de la API"""
     return {
-        "message": "Lumina RAG API - Commercial Edition",
-        "version": "2.0.0",
+        "name": "Lumina RAG API",
+        "version": "1.0.0",
         "status": "running",
-        "features": [
-            "Multi-tenant authentication",
-            "Document management (CRUD)",
-            "Admin panel",
-            "RAG queries",
-            "API Keys support"
-        ],
         "docs": "/docs",
-        "health": "/health"
+        "endpoints": {
+            "query": "POST /api/v1/query",
+            "health": "GET /api/v1/health",
+            "stats": "GET /api/v1/stats",
+            "documents": "GET /api/v1/documents"
+        }
     }
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    try:
-        # Verificar conexión a base de datos
-        from src.database import get_db
-        
-        db = next(get_db())
-        db.execute("SELECT 1")
-        db_status = "healthy"
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        db_status = "unhealthy"
-    
+    """Health check básico"""
     return {
-        "status": "healthy" if db_status == "healthy" else "degraded",
-        "database": db_status,
-        "version": "2.0.0"
-    }
-
-
-@app.get("/api/v1/info")
-async def api_info():
-    """Información de la API"""
-    return {
-        "api_name": "Lumina RAG API",
-        "version": "2.0.0",
-        "edition": "Commercial Multi-Tenant",
-        "endpoints": {
-            "authentication": "/api/v1/auth",
-            "documents": "/api/v1/documents",
-            "admin": "/api/v1/admin",
-            "health": "/health",
-            "docs": "/docs"
-        },
-        "features": {
-            "authentication": ["JWT", "API Keys", "Refresh Tokens"],
-            "document_management": ["Upload", "List", "Delete", "Privacy Control"],
-            "admin_panel": ["Company CRUD", "User CRUD", "Statistics"],
-            "security": ["Rate Limiting", "Role-based Access", "Soft Deletes"]
-        }
+        "status": "healthy",
+        "service": "lumina-rag-api"
     }
 
 
 if __name__ == "__main__":
-    import os
-    port = int(os.getenv("PORT_LUMINA", 3205))
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Servidor API REST Lumina RAG")
+    parser.add_argument("--host", default="0.0.0.0", help="Host del servidor")
+    parser.add_argument("--port", type=int, default=8000, help="Puerto del servidor")
+    parser.add_argument("--reload", action="store_true", help="Modo de desarrollo con auto-reload")
+    
+    args = parser.parse_args()
+    
+    logger.info(f"🌐 Iniciando servidor en http://{args.host}:{args.port}")
+    logger.info(f"📚 Documentación disponible en http://{args.host}:{args.port}/docs")
     
     uvicorn.run(
         "api_server:app",
-        host="0.0.0.0",
-        port=port,
-        reload=True,
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
         log_level="info"
     )
