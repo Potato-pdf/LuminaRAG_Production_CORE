@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """
+
+API REST multi-tenant con autenticación, gestión de documentos y panel admin.
+
+Endpoints:
+- /api/v1/auth - Autenticación (register, login, API keys)
+- /api/v1/documents - Gestión de documentos (CRUD)
+- /api/v1/admin - Panel de administración
+- /api/v1/query - Consultas RAG
+- /api/v1/index - Indexación de documentos
+- /api/v1/health - Estado del sistema
+"""
+
+from fastapi import FastAPI
 🌐 API REST PARA SISTEMA RAG LUMINA
-====================================
 
 API REST que expone el sistema de consultas RAG sin modificar
 la lógica existente del modelo, grafo ni arquitectura.
