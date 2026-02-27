@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 import logging
 
-from src.api.models import (
+from api.querry_api.models import (
     QueryRequest, 
     QueryResponse, 
     SystemStats, 
@@ -10,7 +10,7 @@ from src.api.models import (
     HealthResponse,
     ErrorResponse
 )
-from src.api.service import QueryService
+from api.querry_api.service_refactored import QueryService
 
 logger = logging.getLogger(__name__)
 
@@ -29,50 +29,99 @@ def get_service():
 
 
 @query_router.post(
-    "/query",
+    "/query/public/{empresa}",
     response_model=QueryResponse,
     responses={
         400: {"model": ErrorResponse},
         500: {"model": ErrorResponse},
         503: {"model": ErrorResponse}
     },
-    summary="Realizar consulta al sistema RAG",
-    description="Procesa una consulta y retorna la respuesta generada por el LLM con contexto relevante"
+    summary="Consultar documentos públicos de una empresa",
+    description="Realiza consulta en documentos públicos de la empresa especificada"
 )
-async def query_endpoint(request: QueryRequest):
+async def query_public_company_endpoint(empresa: str, request: QueryRequest):
     """
-    Endpoint principal de consultas.
-    
-    Recibe una consulta y parámetros opcionales, procesa la búsqueda
-    en el sistema RAG y retorna la respuesta del LLM con chunks relevantes.
+    Consultar documentos públicos de una empresa específica.
+
+    Busca en la colección de documentos públicos de la empresa indicada.
     """
     try:
-        logger.info(f"Nueva consulta recibida: {request.query[:50]}...")
-        
+        logger.info(f"Consulta pública para empresa {empresa}: {request.query[:50]}...")
+
         # Importar servicio desde el módulo principal
         from api_server import query_service
-        
+
         if query_service is None:
             raise HTTPException(
                 status_code=503,
                 detail="Servicio no disponible. Sistema no inicializado."
             )
-        
-        # Procesar consulta usando el servicio
-        response = query_service.process_query(
+
+        # Procesar consulta en documentos públicos
+        response = query_service.process_query_by_company(
             query=request.query,
-            k=request.k,
-            k_roots=request.k_roots,
-            include_context=request.include_context
+            empresa=empresa,
+            private=False,  # Documentos públicos
+            k=request.k
         )
-        
-        logger.info(f"Consulta procesada exitosamente en {response.processing_time:.2f}s")
+
+        logger.info(f"Consulta pública procesada exitosamente en {response.processing_time:.2f}s")
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error procesando consulta: {e}", exc_info=True)
+        logger.error(f"Error procesando consulta pública: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error procesando consulta: {str(e)}"
+        )
+
+
+@query_router.post(
+    "/query/private/{empresa}",
+    response_model=QueryResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse}
+    },
+    summary="Consultar documentos privados de una empresa",
+    description="Realiza consulta en documentos privados de la empresa especificada"
+)
+async def query_private_company_endpoint(empresa: str, request: QueryRequest):
+    """
+    Consultar documentos privados de una empresa específica.
+
+    Busca en la colección de documentos privados de la empresa indicada.
+    """
+    try:
+        logger.info(f"Consulta privada para empresa {empresa}: {request.query[:50]}...")
+
+        # Importar servicio desde el módulo principal
+        from api_server import query_service
+
+        if query_service is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Servicio no disponible. Sistema no inicializado."
+            )
+
+        # Procesar consulta en documentos privados
+        response = query_service.process_query_by_company(
+            query=request.query,
+            empresa=empresa,
+            private=True,  # Documentos privados
+            k=request.k
+        )
+
+        logger.info(f"Consulta privada procesada exitosamente en {response.processing_time:.2f}s")
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error procesando consulta privada: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error procesando consulta: {str(e)}"

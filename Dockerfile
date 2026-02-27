@@ -1,53 +1,41 @@
 # =============================================================================
-# DOCKERFILE - LUMINA RAG API
-# =============================================================================
-# Multi-stage build para optimizar tamaño de imagen
+# DOCKERFILE - LUMINA RAG API (Producción)
 # =============================================================================
 
-FROM python:3.11-slim as base
+FROM python:3.12-slim
 
-# Metadata
-LABEL maintainer="Lumina RAG Team"
-LABEL description="Lumina RAG API - Sistema comercial multi-tenant"
-
-# Variables de entorno
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Instalar dependencias del sistema
+# Dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libpq-dev \
+    build-essential \
+    libmagic-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear directorio de trabajo
+# Configuración Python
 WORKDIR /app
 
-# Copiar requirements
-COPY requirements.txt .
-
 # Instalar dependencias Python
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código fuente
 COPY . .
 
-# Crear directorios necesarios
-RUN mkdir -p /app/storage/faiss_collections \
-    /app/storage/graphs \
-    /app/logs \
-    /app/pdfs
+# Variables de entorno
+ENV PYTHONPATH=/app/src
+ENV PYTHONUNBUFFERED=1
 
-# Exponer puerto
-EXPOSE 3205
+# Crear directorios
+RUN mkdir -p /app/storage /app/logs
+
+# Exponer puerto (variable)
+ARG PORT_LUMINA=3205
+ENV PORT_LUMINA=${PORT_LUMINA}
+EXPOSE ${PORT_LUMINA}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3205/health || exit 1
+    CMD curl -f http://localhost:${PORT_LUMINA}/health || exit 1
 
-# Comando para ejecutar la aplicación
-CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "3205", "--reload"]
+# Comando de producción
+CMD python3 api_server.py --host 0.0.0.0
